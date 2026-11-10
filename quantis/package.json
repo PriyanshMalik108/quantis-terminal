@@ -1,0 +1,17 @@
+{
+  "name": "quantis-terminal",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Quantis — multi-asset research terminal (static web app).",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "serve": "npx --yes http-server dist -p 8080 -c-1",
+    "serve:dev": "npx --yes http-server . -p 8080 -c-1",
+    "test": "python3 tests/smoke.py . && python3 tests/test_v4.py ."
+  },
+  "devDependencies": {
+    "clean-css": "5.3.3",
+    "html-minifier-terser": "7.2.0",
+    "terser": "5.36.0"
+  }
+}

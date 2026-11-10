@@ -1,0 +1,105 @@
+/* Quantis · css/modules.css — Analysis tab, AI Lab, reports, ⓘ guide drawer, heatmap.
+   Colours come from the :root tokens in base.css (dark) and THEME_LIGHT in js/app/theme.js. */
+/* ---------- analysis tab ---------- */
+.qxa-dim{color:var(--text-2);font-size:12px}
+.qxa-hero{display:grid;grid-template-columns:auto 1fr 220px;gap:18px;align-items:start}
+.qxa-ring-wrap{display:flex;gap:12px;align-items:center}
+.qxa-ring{transition:stroke-dasharray 1s var(--ease)}
+.qxa-verdict{font:700 18px var(--sans);color:var(--text-0)}
+.qxa-summary p{margin:4px 0 8px;line-height:1.65;font-size:13.5px;color:var(--text-0)}
+.qxa-pillars{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px 14px}
+.qxa-pill{display:grid;grid-template-columns:92px 1fr 28px;gap:8px;align-items:center;font-size:12px;color:var(--text-1)}
+.qxa-pill b{font:600 12px var(--mono);text-align:right;color:var(--text-0)}
+.qxa-bar{height:6px;background:var(--bg-3);border-radius:4px;overflow:hidden}
+.qxa-bar i{display:block;height:100%;border-radius:4px;animation:qxGrow .9s var(--ease) both}
+@keyframes qxGrow{from{width:0!important}}
+.qxa-life{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px}
+.qxa-stage{font:700 20px var(--sans);color:var(--amber);margin:2px 0 6px}
+.qxa-signs{display:flex;gap:6px;margin-bottom:6px}
+.qxa-signs span{font:600 11px var(--mono);padding:2px 6px;border-radius:4px;background:var(--bg-3)}
+.qxa-signs .up{color:var(--up)} .qxa-signs .down{color:var(--down)}
+.qxa-list{margin:0;padding-left:18px;line-height:1.8;font-size:13px}
+.qxa-list.bad li::marker{color:var(--down)} .qxa-list.good li::marker{color:var(--up)}
+.qxa-cf{gap:10px}
+.qxa-cfbox{background:var(--bg-2);border:1px solid var(--line);border-left:3px solid var(--up);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6}
+.qxa-cfbox.neg{border-left-color:var(--down)}
+.qxa-cfbox p{margin:0 0 6px}
+.qxa-cfh{display:flex;justify-content:space-between;font:600 11px var(--mono);letter-spacing:.5px;color:var(--text-2);text-transform:uppercase;margin-bottom:6px}
+.qxa-cfh b{font-size:14px;color:var(--text-0)}
+.qxa-chartbox{position:relative;height:280px;margin:12px 0 6px}
+.qxa-chartbox.sm{height:220px}
+.card p{line-height:1.6}
+.qxa-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.qxa-frow{cursor:pointer} .qxa-frow:hover td{background:var(--bg-2)}
+.qxa-formula{font:11.5px var(--mono);color:var(--teal)}
+.qxa-explain td{background:var(--bg-2);color:var(--text-1);font-size:12.5px;line-height:1.6;padding:8px 10px}
+.qxa-good{color:var(--up)} .qxa-bad{color:var(--down)}
+.qxa-yoy{font-size:10px;margin-left:5px} .qxa-yoy.up{color:var(--up)} .qxa-yoy.down{color:var(--down)}
+.qxa-cs{display:none;font-size:10px;color:var(--text-2);margin-left:5px}
+#qxaStmt.cs .qxa-cs{display:inline} #qxaStmt.cs .qxa-yoy{display:none}
+@media (max-width:900px){.qxa-hero{grid-template-columns:1fr}}
+
+/* ---------- AI lab ---------- */
+.qxai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.qxai-card{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--bg-1);border:1px solid var(--line);border-radius:10px;padding:14px;color:var(--text-0);cursor:pointer;transition:transform .2s var(--ease),border-color .2s,box-shadow .2s}
+.qxai-card:hover{transform:translateY(-2px);border-color:var(--amber-dim);box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.qxai-card.active{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
+.qxai-card b{font-size:13.5px} .qxai-card span:last-child{font-size:12px;color:var(--text-1);line-height:1.5}
+.qxai-ic{font-size:22px}
+.qxai-form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.qxai-form label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-2);flex:1;min-width:160px}
+.qxai-form input,.qxai-form select{background:var(--bg-2);border:1px solid var(--line);color:var(--text-0);padding:8px 10px;border-radius:6px;font-size:13px;outline:none}
+.qxai-result{min-height:120px}
+.qxai-out{font-size:13.5px;line-height:1.7;color:var(--text-0)} .qxai-out h4{color:var(--amber);margin:14px 0 4px;font-size:14px}
+.qxai-out ul,.qxai-out ol{padding-left:20px;margin:4px 0} .qxai-out p{margin:6px 0}
+.qxai-tr{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;border-bottom:1px solid var(--line-soft);padding:4px 0;font-size:12.5px}
+.qxai-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--text-2);margin-bottom:8px}
+.qxai-meta .qxai-copy{margin-left:auto}
+.qxai-wait{display:flex;gap:6px;align-items:center;color:var(--text-1);font-size:13px;padding:20px 0}
+.qxai-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:qxDot 1.2s infinite}
+.qxai-dot:nth-child(2){animation-delay:.15s}.qxai-dot:nth-child(3){animation-delay:.3s}
+@keyframes qxDot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.badge.model{background:rgba(167,139,250,.15);color:#C4B5FD;border:1px solid rgba(167,139,250,.35)}
+.aimsg ul,.aimsg ol{padding-left:18px;margin:4px 0} .aimsg p{margin:4px 0} .aimsg h4{margin:8px 0 2px;font-size:12.5px;color:var(--amber)}
+
+/* ---------- report ---------- */
+.qxr-layout{display:grid;grid-template-columns:330px 1fr;gap:12px;align-items:start}
+.qxr-side textarea{width:100%;background:var(--bg-2);border:1px solid var(--line);color:var(--text-0);border-radius:6px;padding:8px;font:12.5px var(--sans);resize:vertical}
+.qxr-check{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-1);margin:6px 0 10px;line-height:1.5}
+.qxr-exports{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.qxr-exports button:disabled{opacity:.45;cursor:not-allowed}
+.qxr-preview{background:#d9dee5;border-radius:8px;padding:18px;min-height:520px;max-height:calc(100vh - 170px);overflow:auto}
+.qxr-paper{background:#fff;max-width:820px;margin:0 auto;padding:40px 46px;box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:2px;animation:qxRise .4s var(--ease)}
+.qxr-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:480px;color:#334;text-align:center}
+.qxr-empty .qxa-dim{color:#556;max-width:380px}
+@media (max-width:900px){.qxr-layout{grid-template-columns:1fr}.qxr-paper{padding:20px 16px}.qxr-preview{padding:8px}}
+
+/* ---------- guide ---------- */
+.qxg-i{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;margin-left:7px;border-radius:50%;border:1px solid var(--line);background:var(--bg-2);color:var(--text-2);font:italic 700 10.5px Georgia,serif;cursor:pointer;vertical-align:middle;padding:0;transition:all .15s;flex-shrink:0}
+.qxg-i:hover{color:var(--amber);border-color:var(--amber);transform:scale(1.12)}
+.qxg-tabs{align-self:center;margin:0 8px}
+#qxgDrawer{position:fixed;inset:0;z-index:9500;pointer-events:none}
+#qxgDrawer .qxg-back{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .25s}
+#qxgDrawer .qxg-panel{position:absolute;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--bg-1);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(0,0,0,.4);transform:translateX(100%);transition:transform .32s var(--ease);overflow:auto}
+#qxgDrawer.open{pointer-events:auto} #qxgDrawer.open .qxg-back{opacity:1} #qxgDrawer.open .qxg-panel{transform:none}
+.qxg-x{position:absolute;top:12px;right:12px;background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);width:30px;height:30px;border-radius:50%;cursor:pointer}
+.qxg-body{padding:24px 24px 40px;font-size:14px;line-height:1.65;color:var(--text-0)}
+.qxg-kicker{font:600 10.5px var(--mono);letter-spacing:1.4px;color:var(--amber)}
+.qxg-body h3{font-size:20px;margin:4px 0 12px}
+.qxg-body section{margin:14px 0;animation:qxRise .35s var(--ease) both}
+.qxg-body h4{font:600 11px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--text-2);margin:0 0 4px}
+.qxg-body ol,.qxg-body ul{padding-left:20px;margin:4px 0} .qxg-body li{margin:4px 0} .qxg-body p{margin:0}
+.qxg-ex{background:var(--fact-bg);border:1px solid var(--fact-border);border-radius:8px;padding:10px 12px}
+.qxg-f{display:block;background:var(--bg-2);border:1px solid var(--line);border-radius:6px;padding:10px;font:12.5px var(--mono);color:var(--teal);white-space:normal}
+.qxg-note{font-size:12px;color:var(--text-2);margin-bottom:8px}
+
+/* ---------- heatmap & chart view ---------- */
+.qxh{position:relative;width:100%;min-height:320px;border-radius:6px;overflow:hidden;background:var(--bg-2)}
+.qxh-sec{position:absolute;border:1px solid var(--bg-0);box-sizing:border-box}
+.qxh-sh{font:600 10px var(--mono);color:var(--text-1);padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;letter-spacing:.5px}
+.qxh-t{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;color:#fff;font-family:var(--mono);text-shadow:0 1px 2px rgba(0,0,0,.4);transition:filter .15s,opacity .4s;animation:qxFade .5s both}
+.qxh-t:hover{filter:brightness(1.25);z-index:2;outline:1px solid #fff}
+.qxh-t span{font-size:11px;opacity:.95}
+.qxc-layoutbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.qxc-cell{min-width:0}
+#qxResearchChart{min-height:420px}
