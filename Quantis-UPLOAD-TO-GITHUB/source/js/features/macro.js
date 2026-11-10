@@ -81,6 +81,7 @@ async function renderEconomicCalendar(macro){
 }
 let macroRenderToken = 0;
 async function renderMacroDashboard(){
+  if(typeof QXMG!=='undefined') QXMG.mount();
   const myToken = ++macroRenderToken;
   const wbSel = document.getElementById('wbCountrySelect');
   if(wbSel && !wbSel.dataset.populated){

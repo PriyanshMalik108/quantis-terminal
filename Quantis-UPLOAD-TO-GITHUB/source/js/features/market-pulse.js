@@ -12,7 +12,9 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 /* ===================== LIVE MARKET PULSE (CoinGecko + Frankfurter — free, keyless) ===================== */
-async function fetchLivePulse(){
+/* Home v2: the pulse card is user-configurable and rendered by QXH (js/features/home.js). */
+async function fetchLivePulse(){ if(typeof QXH!=='undefined') return QXH.refreshPulse(); return fetchLivePulseLegacy(); }
+async function fetchLivePulseLegacy(){
   const badge = document.getElementById('pulseBadge');
   const note = document.getElementById('pulseNote');
   let ok = 0, fail = 0, notes = [];

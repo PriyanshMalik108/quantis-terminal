@@ -11,7 +11,7 @@
  *             QXM.future   — cost-of-carry fair value and implied carry
  * CONVENTIONS  rates & yields as decimals (0.065 = 6.5 %) unless a name ends in Pct.
  *              Time in years. Series {t:[ms or ISO], c:[price]} oldest → newest.
- * REFERENCES   CFA Program curriculum L1 (Quantitative Methods, Fixed Income, Derivatives),
+ * REFERENCES   Standard textbook finance (quantitative methods, fixed income, derivatives),
  *              L2 (Fixed Income: term structure; Derivatives: valuation), L3 (Risk management).
  * ─────────────────────────────────────────────────────────────────────────────
  */

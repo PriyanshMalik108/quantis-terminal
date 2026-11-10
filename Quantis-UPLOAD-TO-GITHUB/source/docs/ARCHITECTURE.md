@@ -21,12 +21,18 @@
 | `QXC` | modules/charts.js | professional chart widget |
 | `QXA` | modules/analysis.js | financial-analyst engine (Analysis tab) |
 | `QXP` | modules/peers.js | peer comparison |
-| `QXFL` / `QXFLAB` | modules/formulas/cfa-library.js / features/formula-lab.js | CFA L1–L3 formula catalogue + lab |
+| `QXFL` / `QXFLAB` | modules/formulas/library.js / features/formula-lab.js | formula catalogue + lab |
 | `QXAL` | modules/alerts-pro.js | indicator & drawn-line alerts |
 | `QXAI` | modules/ai.js | free-first AI provider chain + AI Lab |
 | `QXCOL` → `QXRT` → `QXRV` → `QXRW`/`QXRO` | modules/reports/* | collect → template model → chart images → render/export |
 | `QXREP` | modules/reports/report-ui.js | Report Studio + facade |
 | `QXE` | features/explorer.js | Universal Search view |
+| `QXH` | features/home.js | configurable Home (indices, hours, pulse, layout) |
+| `QXPICK` | ui/picker.js | worldwide security search input used across views |
+| `QXCOR` | features/correlation.js | correlation & relationship engine |
+| `QXMG` | features/macro-global.js | country macro workspace (World Bank + markets) |
+| `QXSCR` | features/screener-pro.js | advanced screener |
+| `QXL` / motion | app/layout.js, app/motion.js | responsive drawers, table wrapping, cursor spotlight |
 | `QXG`, `QXU` | modules/guide.js, ui.js | ⓘ guides; heatmap, sortable tables |
 
 ## Report pipeline

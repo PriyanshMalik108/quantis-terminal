@@ -11,7 +11,7 @@
 /* =====================================================================================
    QUANTIS FINANCIAL ANALYST — automatic statement analysis
    Pulls the reported statements (TradingView fundamentals, keyless) the moment a company is
-   opened, runs them through a CFA-curriculum formula library and writes the analyst narrative:
+   opened, runs them through a professional formula library and writes the analyst narrative:
    why each cash flow is positive/negative and where it came from, why margins moved, what the
    balance sheet says, red flags, strengths, life-cycle stage and an overall conclusion.
    Every number shown is either reported or derived by a formula that is printed next to it.
@@ -32,7 +32,7 @@ const QXA = (() => {
     'total_assets_yoy_growth_fy','total_debt_yoy_growth_fy','total_revenue_5y_growth_fy','earnings_per_share_diluted_yoy_growth_fy',
     'gross_margin_fy','oper_income_margin_fy','net_margin_fy','ebitda_margin_fy','free_cash_flow_margin_fy','share_buyback_ratio_fy',
     'dividend_payout_ratio_fy','effective_interest_rate_on_debt_fy','total_equity_fy','total_assets_fy',
-    'fiscal_period_fy_h','total_revenue_fy_h','gross_profit_fy_h','ebitda_fy_h','net_income_fy_h','free_cash_flow_fy_h','capital_expenditures_unchanged_fy_h',
+    'fiscal_period_fy_h','fiscal_period_end_fy','total_revenue_fy_h','gross_profit_fy_h','ebitda_fy_h','net_income_fy_h','free_cash_flow_fy_h','capital_expenditures_unchanged_fy_h',
     'total_debt_fy_h','total_assets_fy_h','earnings_per_share_diluted_fy_h','dps_common_stock_prim_issue_fy_h',
     'total_revenue_fq_h','gross_profit_fq_h','net_income_fq_h','free_cash_flow_fq_h','ebitda_fq_h','earnings_per_share_diluted_fq_h'];
   const cache = {};
@@ -67,8 +67,14 @@ const QXA = (() => {
   /* ------------- build the model: reported + derived, every derivation recorded ------------- */
   function build(r, ticker){
     const A = k => Array.isArray(r[k]) ? r[k].map(v=>fin(v)?v:null) : [];
-    const yrs = A('fiscal_period_fy_h').map(v=>v==null?null:String(v));
-    const H = {years:yrs, revenue:A('total_revenue_fy_h'), gross:A('gross_profit_fy_h'), ebitda:A('ebitda_fy_h'), net:A('net_income_fy_h'),
+    /* Fiscal-year labels: TradingView numbers a fiscal year by the calendar year holding most of it,
+       so Reliance's year ending 31-Mar-2026 is "2025" there — while Indian (and most) reports call it
+       FY2026. We label every year by its END date instead, so FY2026 = year ending Mar 2026 / Sep 2026. */
+    const raw = A('fiscal_period_fy_h');
+    const endTs = fin(r.fiscal_period_end_fy) ? new Date(r.fiscal_period_end_fy*1000) : null;
+    const off = endTs && fin(raw[0]) ? endTs.getUTCFullYear() - raw[0] : 0;
+    const yrs = raw.map(v=>v==null?null:String(v + (Math.abs(off)<=1 ? off : 0)));
+    const H = {fyEndMonth: endTs ? endTs.toLocaleString('en-US',{month:'short', timeZone:'UTC'}) : null, years:yrs, revenue:A('total_revenue_fy_h'), gross:A('gross_profit_fy_h'), ebitda:A('ebitda_fy_h'), net:A('net_income_fy_h'),
       fcf:A('free_cash_flow_fy_h'), capex:A('capital_expenditures_unchanged_fy_h'), debt:A('total_debt_fy_h'), assets:A('total_assets_fy_h'),
       eps:A('earnings_per_share_diluted_fy_h'), dps:A('dps_common_stock_prim_issue_fy_h')};
     H.cfo = H.fcf.map((f,i)=> fin(f) && fin(H.capex[i]) ? f + Math.abs(H.capex[i]) : null);
@@ -375,8 +381,8 @@ const QXA = (() => {
     el.querySelectorAll('[data-qxag]').forEach(b=>b.addEventListener('click',()=>{ el.querySelectorAll('[data-qxag]').forEach(x=>x.classList.toggle('active',x===b)); const g=b.dataset.qxag; el.querySelectorAll('.qxa-frow').forEach(r=>{ r.style.display = g==='*'||r.dataset.g===g ? '' : 'none'; r.nextElementSibling.style.display='none'; }); }));
     el.querySelectorAll('.qxa-frow').forEach(r=>r.addEventListener('click',()=>{ const e=r.nextElementSibling; e.style.display = e.style.display==='none' ? '' : 'none'; }));
     el.querySelectorAll('[data-qxacs]').forEach(b=>b.addEventListener('click',()=>{ el.querySelectorAll('[data-qxacs]').forEach(x=>x.classList.toggle('active',x===b)); el.querySelector('#qxaStmt').classList.toggle('cs', b.dataset.qxacs==='1'); }));
-    el.querySelector('#qxaAiBtn').addEventListener('click',()=>{ if(window.QXAI) QXAI.runTool('explain', ticker); });
-    el.querySelector('#qxaReportBtn').addEventListener('click',()=>{ goto('reports'); setTimeout(()=>{ const s=document.getElementById('repSec'); if(s){ s.value=ticker; } if(window.QXR) QXR.build(ticker); },60); });
+    el.querySelector('#qxaAiBtn').addEventListener('click',()=>{ if((typeof QXAI!=='undefined')) QXAI.runTool('explain', ticker); });
+    el.querySelector('#qxaReportBtn').addEventListener('click',()=>{ goto('reports'); setTimeout(()=>{ const s=document.getElementById('repSec'); if(s){ s.value=ticker; } if((typeof QXR!=='undefined')) QXR.build(ticker); },60); });
     el.querySelector('#qxaCsv').addEventListener('click',()=>{ const rows=[['Group','Metric','Formula','Inputs','Value','Assessment']].concat(ms.map(x=>[x.group,x.name,x.formula,x.inputs.replace(/<[^>]+>/g,''),x.value==null?'':x.value,x.tone||'neutral'])); downloadText(rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'), `${ticker}_ratio_analysis.csv`, 'text/csv'); });
     drawCharts(m);
     QXP.render(el.querySelector('#qxaPeers'), ticker);

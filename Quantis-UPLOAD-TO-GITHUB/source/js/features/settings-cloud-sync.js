@@ -30,8 +30,10 @@
        reconnecting will have the LATER reconnect's local data win, not a field-level merge. This
        is disclosed in the UI, not hidden — good enough for "my own data on ≤2-3 personal
        devices", not a substitute for real multi-user collaboration. */
-const CLOUD_SYNC_KEYS = ['quantis_workspaces_v1','quantis_custom_screens_v1','quantis_portfolio_v1','quantis_position_notes_v1','quantis_alerts_v1','quantis_theme_v1','qx_alerts_pro_v1','quantis_custom_apis_v1','qxr_theme_v2','qxr_by','qxr_firm'];
+const CLOUD_SYNC_KEYS = ['quantis_idx_v1','quantis_pulse_v1','quantis_ex_v1','quantis_dash_layout_v1','quantis_corr_v2','quantis_macro_v2','quantis_admitted_v1','quantis_layout_v1','qxc_templates','quantis_regime_idx','quantis_movers_mode','quantis_custom_screens_v1','quantis_workspaces_v1','quantis_custom_screens_v1','quantis_portfolio_v1','quantis_position_notes_v1','quantis_alerts_v1','quantis_theme_v1','qx_alerts_pro_v1','quantis_custom_apis_v1','qxr_theme_v2','qxr_by','qxr_firm'];
 const FIREBASE_CONFIG_STORAGE_KEY = 'quantis_firebase_config';
+// Any write to a synced key is pushed (debounced) to the signed-in user's cloud copy automatically.
+(()=>{ const orig = safeStorage.setItem.bind(safeStorage); safeStorage.setItem = (k, v) => { orig(k, v); if(!window.__qxPulling && CLOUD_SYNC_KEYS.includes(k) && typeof cloudSyncPush==='function') cloudSyncPush(); }; })();
 let firebaseApp = null, firestoreDb = null, cloudSyncUser = null, cloudSyncPushTimer = null;
 
 function parseFirebaseConfigInput(raw){
@@ -68,9 +70,12 @@ function loadFirebaseSdk(){
     .catch(e=>{ firebaseSdkPromise = null; throw e; });
   return firebaseSdkPromise;
 }
+/* The site owner's config (site-config.js) takes priority — then every visitor can simply press
+   "Sign in". A config pasted in Settings (bring-your-own Firebase) still works as before. */
+const SITE_FIREBASE = (()=>{ try{ const c = window.QX_SITE_CONFIG && window.QX_SITE_CONFIG.firebase; return c && c.apiKey && c.projectId ? c : null; }catch(e){ return null; } })();
 async function initFirebaseIfConfigured(){
   let raw;
-  try{ raw = safeStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY); }catch(e){ return; }
+  try{ raw = SITE_FIREBASE ? JSON.stringify(SITE_FIREBASE) : safeStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY); }catch(e){ return; }
   if(!raw) return;
   try{ await loadFirebaseSdk(); }
   catch(e){ console.warn('[Quantis] cloud sync unavailable:', e.message); return; } // everything else in the app still works
@@ -105,11 +110,16 @@ function disconnectFirebase(){
   location.reload(); // simplest fully-correct way to reset the Firebase SDK's internal state
 }
 function signInWithGoogle(){
-  if(!firebaseApp && safeStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY)){ toast('Cloud sync is still loading — try again in a moment.', 'warn'); initFirebaseIfConfigured(); return; }
+  if(!firebaseApp && (SITE_FIREBASE || safeStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY))){ toast('Sign-in is still loading — try again in a moment.', 'warn'); initFirebaseIfConfigured(); return; }
   if(!firebaseApp){ toast('Connect a Firebase project first (paste your config above and click Connect).'); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider).catch(e=>{
-    document.getElementById('cloudSyncStatusLine').innerHTML = `<span style="color:var(--down)">Sign-in failed: ${escapeHtml(e.message)}</span>`;
+  provider.setCustomParameters({prompt:'select_account'});
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+  firebase.auth().signInWithPopup(provider).then(r=>{ if(r && r.user) toast(`Signed in as ${r.user.displayName||r.user.email}. Your data now syncs securely.`, 'ok'); }).catch(e=>{
+    // Popups are blocked on some phones / in-app browsers — fall back to a full-page redirect.
+    if(/popup/i.test(e.code||e.message||'')){ firebase.auth().signInWithRedirect(provider); return; }
+    const line = document.getElementById('cloudSyncStatusLine'); if(line) line.innerHTML = `<span style="color:var(--down)">Sign-in failed: ${escapeHtml(e.message)}</span>`;
+    toast('Sign-in failed: '+e.message, 'err');
   });
 }
 function signOutOfCloud(){ if(typeof firebase !== 'undefined' && firebase.auth) firebase.auth().signOut(); }
@@ -149,7 +159,9 @@ async function cloudSyncPull(){
       // page load with a signed-in user pulled, wrote, and reloaded unconditionally — and since Firebase
       // restores the session on load, that re-triggered this handler: an infinite reload loop.
       let changed = false;
+      window.__qxPulling = true;
       CLOUD_SYNC_KEYS.forEach(k=>{ if(data[k] != null && safeStorage.getItem(k) !== data[k]){ safeStorage.setItem(k, data[k]); changed = true; } });
+      window.__qxPulling = false;
       if(changed){
         if(line) line.innerHTML = 'Found newer cloud data — reloading to apply it…';
         setTimeout(()=>location.reload(), 600);

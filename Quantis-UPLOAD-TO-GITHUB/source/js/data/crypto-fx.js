@@ -132,6 +132,14 @@ async function runCurrencyConvert(){
     resultEl.innerHTML = `${amount.toLocaleString()} ${from} = <span class="up">${converted.toLocaleString(undefined,{maximumFractionDigits:2})} ${to}</span> <span style="font-size:11px;color:var(--text-2);font-weight:400;">(1 ${from} = ${rate.toFixed(4)} ${to}, live via Frankfurter/ECB)</span>`;
   }catch(e){
     if(myToken !== fxConvToken) return;
+    // Frankfurter (ECB) publishes ~30 currencies; ExchangeRate-API's open feed covers 160+ (AED, SAR, NGN, PKR…).
+    try{
+      const j = await cachedJson('er_'+from, 6*3600e3, async()=>{ const r = await fetchWithTimeout('https://open.er-api.com/v6/latest/'+encodeURIComponent(from), {}, 9000); if(!r.ok) throw new Error('HTTP '+r.status); const x = await r.json(); if(x.result!=='success') throw new Error('unsupported currency'); return x; });
+      const rate = j.rates?.[to]; if(rate==null) throw new Error('no '+to+' rate');
+      if(myToken !== fxConvToken) return;
+      resultEl.innerHTML = `${amount.toLocaleString()} ${from} = <span class="up">${(amount*rate).toLocaleString(undefined,{maximumFractionDigits:4})} ${to}</span> <span style="font-size:11px;color:var(--text-2);font-weight:400;">(1 ${from} = ${rate.toFixed(rate<1?6:4)} ${to} · ExchangeRate-API, updated ${escapeHtml(String(j.time_last_update_utc||'').slice(5,16))})</span>`;
+      return;
+    }catch(e2){}
     const fFrom = FX_FALLBACK_TO_USD[from], fTo = FX_FALLBACK_TO_USD[to];
     if(fFrom && fTo){
       const rate = fFrom/fTo, converted = amount*rate;

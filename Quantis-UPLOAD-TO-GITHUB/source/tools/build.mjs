@@ -38,9 +38,9 @@ const cssName = `assets/app.${hash(css)}.css`; fs.writeFileSync(path.join(DIST, 
 // ---- HTML ----
 html = html.replace(/(<link rel="stylesheet" href="css\/[^"]+">\n?)+/, `<link rel="stylesheet" href="${cssName}" integrity="${sri(css)}">\n`);
 html = html.replace(/<!-- APP-SCRIPTS:START[\s\S]*?APP-SCRIPTS:END -->/, `<script src="${jsName}" integrity="${sri(js.code)}"></script>`);
-const CSP = ["default-src 'self'", "script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.gstatic.com", "script-src-attr 'unsafe-inline'",
+const CSP = ["default-src 'self'", "script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com", "script-src-attr 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "connect-src 'self' https:",
-  "worker-src 'self'", "manifest-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "upgrade-insecure-requests"].join('; ');
+  "frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com", "worker-src 'self'", "manifest-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'none'", "upgrade-insecure-requests"].join('; ');
 html = html.replace('<meta charset="UTF-8">', `<meta charset="UTF-8">\n<meta http-equiv="Content-Security-Policy" content="${CSP}">\n<meta name="referrer" content="strict-origin-when-cross-origin">`);
 html = await minifyHtml(html, {collapseWhitespace:true, conservativeCollapse:true, removeComments:true, minifyCSS:false, minifyJS:false, keepClosingSlash:true});
 fs.writeFileSync(path.join(DIST, 'index.html'), html);
@@ -48,6 +48,7 @@ fs.writeFileSync(path.join(DIST, 'index.html'), html);
 // ---- PWA ----
 fs.cpSync(path.join(ROOT, 'assets'), path.join(DIST, 'assets'), {recursive:true});
 fs.copyFileSync(path.join(ROOT, 'manifest.webmanifest'), path.join(DIST, 'manifest.webmanifest'));
+fs.copyFileSync(path.join(ROOT, 'site-config.js'), path.join(DIST, 'site-config.js')); // owner-editable, not bundled
 const shell = ['./', './index.html', './manifest.webmanifest', './'+jsName, './'+cssName, './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
 const sw = rd('sw.js').replace(/const VERSION = '[^']+';/, `const VERSION = 'quantis-${hash(js.code+css)}';`).replace(/const SHELL = [^;]+;/, `const SHELL = ${JSON.stringify(shell)};`);
 fs.writeFileSync(path.join(DIST, 'sw.js'), (await minify(sw, {format:{comments:false}})).code);

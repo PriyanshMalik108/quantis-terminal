@@ -20,6 +20,11 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => 
 self.addEventListener('fetch', e => {
   const req = e.request; if(req.method !== 'GET') return;
   const url = req.url;
+  if(new URL(url).origin === self.location.origin && /site-config\.js$/.test(new URL(url).pathname)){
+    // owner-editable settings: always try the network first so edits made on GitHub apply immediately
+    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION+'-shell').then(c => c.put(req, copy)); return res; }).catch(() => caches.match(req)));
+    return;
+  }
   if(new URL(url).origin === self.location.origin){
     e.respondWith(caches.match(req, {ignoreSearch:true}).then(hit => hit || fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION+'-shell').then(c => c.put(req, copy)); return res; }).catch(() => caches.match('./index.html'))));
     return;

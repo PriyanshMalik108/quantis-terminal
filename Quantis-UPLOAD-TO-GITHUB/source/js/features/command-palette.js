@@ -213,5 +213,7 @@ overlay.addEventListener('click', e=>{ if(e.target===overlay) closePalette(); })
 document.getElementById('globalSearch').addEventListener('focus', openPalette);
 document.getElementById('helpBtn').addEventListener('click', ()=>document.getElementById('helpOverlay').classList.add('show'));
 document.getElementById('settingsBtn').addEventListener('click', ()=>{ loadSettingsIntoForm(); document.getElementById('settingsOverlay').classList.add('show'); });
-document.getElementById('cloudSyncBtn').addEventListener('click', ()=>{ loadSettingsIntoForm(); document.getElementById('settingsOverlay').classList.add('show'); document.getElementById('cloudSyncSetupBox')?.scrollIntoView?.({block:'nearest'}); });
+document.getElementById('cloudSyncBtn').addEventListener('click', (ev)=>{
+  // One-tap Google sign-in when the site owner has configured it and nobody is signed in yet.
+  if(typeof SITE_FIREBASE!=='undefined' && SITE_FIREBASE && !cloudSyncUser){ ev.stopImmediatePropagation(); signInWithGoogle(); return; } loadSettingsIntoForm(); document.getElementById('settingsOverlay').classList.add('show'); document.getElementById('cloudSyncSetupBox')?.scrollIntoView?.({block:'nearest'}); });
 // (cloud-sync start-up moved to js/app/init.js — it lives in a later file)

@@ -16,6 +16,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 const QXCOL = (() => {
+  // 52-week range from intraday highs and lows (closing prices understate it), matching exchange data.
+  function hiLo52(px, B){ if(!px || !B || !B.high || !B.low) return; const k = Math.max(0, B.close.length-252); const h = B.high.slice(k).filter(isFinite), l = B.low.slice(k).filter(v=>isFinite(v)&&v>0); if(h.length) px.hi52 = Math.max(...h); if(l.length) px.lo52 = Math.min(...l); }
   const fin = v => typeof v==='number' && isFinite(v);
   const settle = async (gaps, label, p) => { try{ return await p; }catch(e){ gaps.push(label+': '+e.message); return null; } };
   const ymd = n => { const s = String(n||''); return s.length===8 ? `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6)}` : s.slice(0,10); };
@@ -30,7 +32,7 @@ const QXCOL = (() => {
     await Promise.all([
       settle(D.gaps, 'Statements', (async()=>{ D.m = await QXA.get(t); D.S = QXA.summary(D.m); D.metrics = QXA.metrics(D.m); })()),
       settle(D.gaps, 'Key data', (async()=>{ D.f = LIVE_FUNDAMENTALS[t] || await fetchLiveFundamentals(t); LIVE_FUNDAMENTALS[t] = D.f; })()),
-      settle(D.gaps, 'Prices', (async()=>{ const B = await QXC.loadBars(t,'1D'); D.bars = B; D.px = QXM.series.stats({t:B.time.map(x=>x*1000), c:B.close}); D.series = {t:B.time.map(x=>new Date(x*1000).toISOString().slice(0,10)), c:B.close}; })()),
+      settle(D.gaps, 'Prices', (async()=>{ const B = await QXC.loadBars(t,'1D'); D.bars = B; D.px = QXM.series.stats({t:B.time.map(x=>x*1000), c:B.close}); hiLo52(D.px, B); D.series = {t:B.time.map(x=>new Date(x*1000).toISOString().slice(0,10)), c:B.close}; })()),
       settle(D.gaps, 'Benchmark', (async()=>{ const bm = benchmarkFor(sec); if(!bm) return; const B = await QXC.loadBars(bm,'1D'); D.benchmark = {t:bm, series:{t:B.time.map(x=>new Date(x*1000).toISOString().slice(0,10)), c:B.close}}; })()),
       settle(D.gaps, 'Company facts (Wikidata)', (async()=>{ D.wd = await QXFREE.wikidataCompany(sec.n); })()),
       settle(D.gaps, 'Description (Wikipedia)', (async()=>{ D.wiki = await QXFREE.wiki(String(sec.n).replace(/ (Inc|Ltd|Limited|Corp|Corporation|PLC)\.?$/i,'')+' company'); })()),
@@ -182,7 +184,7 @@ const QXCOL = (() => {
   async function market(item){
     const s = await QXS.snapshot(item); const D = {kind:item.kind, item:s, gaps:[], generated:new Date(), price:s.price, ccy:s.ccy};
     const known = SECURITY_UNIVERSE.find(x=>LD.tvSymbol(x.t)===s.sym);
-    if(known){ await settle(D.gaps, 'History', QXC.loadBars(known.t,'1D').then(B=>{ D.bars=B; D.series = {t:B.time.map(x=>new Date(x*1000).toISOString().slice(0,10)), c:B.close}; D.px = QXM.series.stats({t:B.time.map(x=>x*1000), c:B.close}); D.tech = technicals(B); })); }
+    if(known){ await settle(D.gaps, 'History', QXC.loadBars(known.t,'1D').then(B=>{ D.bars=B; D.series = {t:B.time.map(x=>new Date(x*1000).toISOString().slice(0,10)), c:B.close}; D.px = QXM.series.stats({t:B.time.map(x=>x*1000), c:B.close}); hiLo52(D.px, B); D.tech = technicals(B); })); }
     else D.gaps.push('History: this instrument has no free daily history feed — snapshot only');
     return D;
   }

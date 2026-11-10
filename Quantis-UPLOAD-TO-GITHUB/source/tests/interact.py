@@ -35,9 +35,9 @@ with sync_playwright() as p:
         pg.click('.wstab[data-ws="Default Workspace"]')
         # watchlist add via + button
         pg.click('.navitem[data-view="research"]'); pg.wait_for_timeout(1500)
-        pg.click('#wlAddBtn'); pg.fill('#askInput','ZZZZ'); pg.click('#askOk'); pg.wait_for_timeout(200)
-        check('invalid ticker shows inline error', 'universe' in pg.inner_text('#askError'))
-        pg.fill('#askInput','tsla'); pg.click('#askOk'); pg.wait_for_timeout(500)
+        pg.click('#wlAddBtn'); pg.fill('#wlPick','tsla'); pg.wait_for_timeout(400)
+        check('watchlist search lists matches', pg.locator('.qxpick-dd.open .qxpick-row').count() >= 1)
+        pg.keyboard.press('Enter'); pg.wait_for_timeout(500)
         check('TSLA added to watchlist', pg.locator('.wl-item[data-t="TSLA"]').count()==1)
         pg.click('.wl-item[data-t="TSLA"]'); pg.wait_for_timeout(2500)
         check('header switched to Tesla', 'Tesla' in pg.inner_text('#secName'))
@@ -91,7 +91,7 @@ with sync_playwright() as p:
         pg.click('#settingsBtn'); pg.wait_for_timeout(300); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
         check('Esc closes settings', not pg.is_visible('#settingsOverlay.show'))
         # screener save
-        pg.click('.navitem[data-view="screener"]'); pg.fill('#fPe','30'); pg.click('text=Run Screen'); pg.click('text=Save as new screen'); pg.fill('#askInput','Cheap'); pg.keyboard.press('Enter'); pg.wait_for_timeout(300)
+        pg.click('.navitem[data-view="screener"]'); pg.wait_for_timeout(400); pg.fill('#f-pe-max','30'); pg.click('#scrRun'); pg.wait_for_timeout(600); pg.click('#scrSave'); pg.fill('#askInput','Cheap'); pg.keyboard.press('Enter'); pg.wait_for_timeout(300)
         check('screen saved', 'Cheap' in pg.inner_text('#savedScreensList'))
     else:
         pg.click('#mnMore'); pg.wait_for_timeout(400)

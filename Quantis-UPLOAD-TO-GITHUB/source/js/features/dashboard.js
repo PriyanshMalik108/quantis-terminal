@@ -28,7 +28,9 @@ async function renderMarketRegime(){
   const labelEl = document.getElementById('regimeLabel'), noteEl = document.getElementById('regimeNote'), badgeEl = document.getElementById('regimeBadge');
   if(!labelEl) return;
   try{
-    const hist = await fetchYahooHistory('SPX', '^GSPC');
+    const rt = (document.getElementById('regimeIdx')||{}).value || 'SPX';
+    const rname = (SECURITY_UNIVERSE.find(x=>x.t===rt)||{n:rt}).n;
+    const hist = await fetchYahooHistory(rt, yahooSymbolFor(rt));
     const closes = hist.data;
     if(closes.length < 60) throw new Error('not enough history returned');
     const highs = hist.ohlc?.high || closes, lows = hist.ohlc?.low || closes;
@@ -44,11 +46,11 @@ async function renderMarketRegime(){
     else if(adx14 <= 20){ regime='RANGE-BOUND / CHOPPY'; color='var(--amber)'; }
     else{ regime = bullish ? 'WEAK BULL' : 'WEAK BEAR'; color='var(--amber)'; }
     labelEl.textContent = regime; labelEl.style.color = color;
-    noteEl.innerHTML = `S&amp;P 500: ADX(14) = ${adx14!=null?adx14.toFixed(1):'—'} (${adx14>25?'trending':adx14<=20?'range-bound':'weak trend'}), price ${bullish?'above':'below'} its 50-day SMA. ADX&gt;25 = trending; &le;20 = range-bound; between = weak trend. This is a real, documented, rule-based classification — not a machine-learned regime model.`;
+    noteEl.innerHTML = `${escapeHtml(rname)}: ADX(14) = ${adx14!=null?adx14.toFixed(1):'—'} (${adx14>25?'trending':adx14<=20?'range-bound':'weak trend'}), price ${bullish?'above':'below'} its 50-day SMA. ADX&gt;25 = trending; &le;20 = range-bound; between = weak trend. This is a real, documented, rule-based classification — not a machine-learned regime model.`;
     if(badgeEl){ badgeEl.textContent='LIVE'; badgeEl.className='badge fact'; }
   }catch(e){
     labelEl.textContent = 'UNAVAILABLE'; labelEl.style.color='var(--text-2)';
-    noteEl.innerHTML = `Needs the live S&amp;P 500 daily series (ADX + 50-day trend), which is unreachable right now — ${escapeHtml(e.message)}. A regime label is not guessed without data.`;
+    noteEl.innerHTML = `Needs the index's live daily series (ADX + 50-day trend), which is unreachable right now — ${escapeHtml(e.message)}. A regime label is not guessed without data.`;
   }
 }
 async function renderDashboardLiveIndices(){
@@ -175,6 +177,7 @@ function getExchangeStatus(ex, now){
   return {status, localTimeStr: `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`, weekday, holidayName};
 }
 function renderMarketHours(){
+  if((typeof QXH!=='undefined')){ QXH.renderHours(); return; } // Home v2 (js/features/home.js) owns this card now
   const box = document.getElementById('marketHoursBox');
   if(!box) return;
   const now = new Date();
@@ -194,13 +197,10 @@ function renderMarketHours(){
 }
 if(!window._marketHoursInterval) window._marketHoursInterval = setInterval(renderMarketHours, 60*1000);
 function renderDashboard(){
+  if((typeof QXH!=='undefined')) QXH.init();
   renderMarketHours();
   runCurrencyConvert();
-  document.getElementById('idxList').innerHTML = ['SPX','DJI','NDX','NIFTY50','SENSEX'].map(t=>{
-    const s = SECURITIES.find(x=>x.t===t);
-    return `<div class="idxcard" id="idxcard-${t}" style="cursor:pointer" onclick="selectSecurity('${t}')"><div class="nm">${s?s.n:t}</div><div class="px">Loading…</div></div>`;
-  }).join('');
-  renderDashboardLiveIndices();
+  if((typeof QXH!=='undefined')) QXH.refreshIndices();
   renderMarketRegime();
   document.getElementById('dashAlerts').innerHTML = renderDashAlerts();
   const sel = document.getElementById('dashMarket');
@@ -222,9 +222,9 @@ async function fetchMarketSnapshot(market){
   return cachedFetch('mktsnap_'+market, 3*60*1000, async ()=>{
     const filter = [{left:'type',operation:'equal',right:'stock'},{left:'is_primary',operation:'equal',right:true},{left:'market_cap_basic',operation:'nempty'}];
     if(market === 'india') filter.push({left:'exchange',operation:'equal',right:'NSE'});
-    const {rows, total} = await LD.tvScan(market, {filter, columns:['name','description','close','change','sector','market_cap_basic','logoid','currency','price_52_week_high','price_52_week_low','exchange','country','type'],
+    const {rows, total} = await LD.tvScan(market, {filter, columns:['name','description','close','change','sector','market_cap_basic','logoid','currency','price_52_week_high','price_52_week_low','exchange','country','type','volume'],
       sort:{sortBy:'market_cap_basic',sortOrder:'desc'}, range:[0,500]});
-    if(rows.length < 20) throw new Error('too few listings returned');
+    if(rows.length < 5) throw new Error('too few listings returned for this market');
     return {rows, total, via:'TradingView'};
   });
 }
@@ -262,7 +262,8 @@ async function renderMarketSnapshot(){
     setBadge('sectorBadge', true);
     // top movers among the 500 largest
     const sorted = [...rows].sort((a,b)=>b.change-a.change);
-    const movers = [...sorted.slice(0,5), ...sorted.slice(-5).reverse()];
+    const mode = (()=>{ try{ return JSON.parse(safeStorage.getItem('quantis_movers_mode')) || 'both'; }catch(e){ return 'both'; } })();
+    const movers = mode==='gainers' ? sorted.slice(0,10) : mode==='losers' ? sorted.slice(-10).reverse() : mode==='active' ? [...rows].sort((a,b)=>(b.close*(b.volume||0))-(a.close*(a.volume||0))).slice(0,10) : [...sorted.slice(0,5), ...sorted.slice(-5).reverse()];
     document.getElementById('moversList').innerHTML = movers.map(r=>{
       const tk = r._s.split(':')[1];
       return `<div class="idxcard" style="cursor:pointer" data-tv="${escapeHtml(r._s)}" title="${escapeHtml(r.description||r.name)} — open in Research"><div class="nm" style="display:flex;align-items:center;gap:6px;">${r.logoid?`<img src="${LD.logoUrl(r.logoid)}" width="16" height="16" alt="" style="border-radius:50%;background:#fff;" onerror="this.remove()">`:''}${escapeHtml(tk)}</div><div class="px ${r.change>=0?'up':'down'}">${r.change>=0?'+':''}${r.change.toFixed(2)}%</div></div>`;
@@ -308,7 +309,7 @@ function admitTvRow(row){
   let t = sym;
   if(SECURITY_UNIVERSE.some(x=>x.t===t) || SECURITIES.some(x=>x.t===t)) t = sym+'.'+ex;
   const country = row.country || '';
-  const cls = row.type === 'fund' ? 'ETF' : 'Equity';
+  const cls = ({fund:'ETF', index:'Index', crypto:'Crypto', spot:'Crypto', forex:'FX', fx:'FX', commodity:'Commodity', cfd:'Commodity', futures:'Derivative', future:'Derivative'})[row.type] || 'Equity';
   const meta = {t, n: row.description || row.name || sym, ex: LD.TV_EX_LABEL[ex] || ex, ctry: country || 'Global', sector: row.sector || cls, cls,
     _tv: tvSym, _cnbc: LD.cnbcFromTv(tvSym, country), _logoid: row.logoid || null};
   SECURITY_UNIVERSE.push(meta);

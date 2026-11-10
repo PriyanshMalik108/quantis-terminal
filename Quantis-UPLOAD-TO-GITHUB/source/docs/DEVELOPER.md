@@ -6,7 +6,7 @@
 | Add a new JS file | create it, add its path to `js/manifest.json` in the right position, run `python3 tools/sync_index.py` |
 | Add a view | markup `<div class="view" id="view-NAME">` in index.html + nav item; lazy render in `goto()` (js/app/navigation.js) |
 | Add a data source | `js/data/providers/free-sources.js` (fetcher via `cachedJson`) + catalogue entry with a `probe` |
-| Add a formula | one object in `js/modules/formulas/cfa-library.js` (`in` = inputs, 4th item = auto-fill key from `QXFL.context`) |
+| Add a formula | one object in `js/modules/formulas/library.js` (`in` = inputs, 4th item = auto-fill key from `QXFL.context`) |
 | Add a report type | `js/modules/reports/templates.js`: write a builder, add to `TYPES` with the kinds it applies to |
 | Add an asset kind | collector (reports/collectors.js) + detail renderer (features/explorer.js `RENDER`) + market in universal-search.js |
 | Add an ⓘ guide | `G` object in js/modules/guide.js; keys `view:<id>`, `tab:<id>`, `card:<lowercase card title>` |

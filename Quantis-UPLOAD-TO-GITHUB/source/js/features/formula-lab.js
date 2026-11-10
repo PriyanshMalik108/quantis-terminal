@@ -2,10 +2,10 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Quantis Terminal · js/features/formula-lab.js
  * ─────────────────────────────────────────────────────────────────────────────
- * PURPOSE   Formula Lab view (#view-formulas): browse/search the CFA L1–L3 catalogue (QXFL),
+ * PURPOSE   Formula Lab view (#view-formulas): browse/search the formula catalogue (QXFL),
  *           run any formula, and one-click "Fill from <ticker>" to apply it to the selected
  *           company's live statements. Inputs that were auto-filled are marked LIVE.
- * DEPENDS   QXFL (modules/formulas/cfa-library.js), currentSecurity, toast
+ * DEPENDS   QXFL (modules/formulas/library.js), currentSecurity, toast
  * EXPOSES   QXFLAB.{mount(), open(id)}
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -15,16 +15,16 @@ const QXFLAB = (() => {
     return unit==='%' ? s+'%' : unit==='x' ? s+'×' : unit==='yrs' ? s+' yrs' : unit==='days' ? s+' days' : unit==='bp' ? s+' bp' : s; };
   function mount(){
     const v = document.getElementById('view-formulas'); if(!v || v.dataset.ready) return; v.dataset.ready = 1;
-    const levels = ['L1','L2','L3'];
+    const levels = [['F','Foundation'],['I','Intermediate'],['A','Advanced']];
     v.querySelector('.viewbody').innerHTML = `<div class="qxfl-layout">
       <div class="card qxfl-side"><input id="qxflQ" placeholder="Search ${QXFL.all.length} formulas…" spellcheck="false">
-        <div class="qxfl-lv"><button class="chip active" data-lv="">All</button>${levels.map(l=>`<button class="chip" data-lv="${l}">CFA ${l}</button>`).join('')}</div>
+        <div class="qxfl-lv"><button class="chip active" data-lv="">All</button>${levels.map(([k,l])=>`<button class="chip" data-lv="${k}">${l}</button>`).join('')}</div>
         <div id="qxflList" class="qxfl-list"></div></div>
       <div class="card qxfl-main" id="qxflMain"></div></div>`;
     const draw = () => {
       const q = v.querySelector('#qxflQ').value.toLowerCase(), lv = v.querySelector('.qxfl-lv .chip.active').dataset.lv;
       const items = QXFL.all.filter(e => (!lv || e.lv===lv) && (!q || (e.name+' '+e.topic+' '+e.f).toLowerCase().includes(q)));
-      const groups = {}; items.forEach(e => (groups[e.lv+' · '+e.topic] = groups[e.lv+' · '+e.topic] || []).push(e));
+      const groups = {}; items.forEach(e => (groups[e.topic] = groups[e.topic] || []).push(e));
       v.querySelector('#qxflList').innerHTML = Object.entries(groups).map(([g, arr])=>`<div class="qxfl-g">${escapeHtml(g)}</div>${arr.map(e=>`<div class="qxfl-i ${cur&&cur.id===e.id?'active':''}" data-id="${e.id}">${escapeHtml(e.name)}${e.in.some(i=>i[3])?'<span title="Can be filled from live company data">◉</span>':''}</div>`).join('')}`).join('') || '<div class="qxa-dim">No match.</div>';
     };
     v.querySelector('#qxflQ').addEventListener('input', draw);
@@ -35,7 +35,7 @@ const QXFLAB = (() => {
   function open(id){
     cur = QXFL.byId(id); filled = {}; const el = document.getElementById('qxflMain'); if(!cur || !el) return;
     const auto = cur.in.some(i=>i[3]);
-    el.innerHTML = `<div class="qxfl-tags"><span class="badge fact">CFA ${cur.lv}</span><span class="badge">${escapeHtml(cur.topic)}</span></div><h3 class="qxfl-title">${escapeHtml(cur.name)}</h3>
+    el.innerHTML = `<div class="qxfl-tags"><span class="badge fact">${({F:'Foundation',I:'Intermediate',A:'Advanced'})[cur.lv]||''}</span><span class="badge">${escapeHtml(cur.topic)}</span></div><h3 class="qxfl-title">${escapeHtml(cur.name)}</h3>
       <code class="qxg-f">${escapeHtml(cur.f)}</code>
       <div class="qxfl-inputs">${cur.in.map(([k,label,d,a])=>`<label>${escapeHtml(label)}${a?` <span class="qxfl-auto" data-auto="${k}"></span>`:''}<input data-k="${k}" ${/List$/.test(k)?'':'type="number" step="any"'} value="${escapeHtml(String(d))}"></label>`).join('')}</div>
       <div class="qxfl-actions">${auto?`<button class="btn" id="qxflFill">Fill from ${escapeHtml(currentSecurity)}</button>`:''}<button class="btn secondary" id="qxflReset">Reset to example</button><button class="btn secondary" id="qxflCopy">Copy result</button></div>

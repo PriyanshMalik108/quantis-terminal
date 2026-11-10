@@ -35,6 +35,13 @@ const QXC = (() => {
     ['1M','1m','1 minute',3],['5M','5m','5 minutes',10],['15M','15m','15 minutes',20],['30M','30m','30 minutes',30],
     ['1H','1h','1 hour',90],['4H','4h','4 hours',240],['1D','D','1 day',null],['1W','W','1 week',null],['1MO','M','1 month',null],
   ];
+  const TOUCH = (typeof matchMedia==='function') && matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches;
+  const BUILTIN_TPL = {
+    'Trend following': [{id:'vol',p:{ma:20}},{id:'ema',p:{period:20}},{id:'ema',p:{period:50}},{id:'st',p:{period:10,mult:3}}],
+    'Momentum': [{id:'vol',p:{ma:20}},{id:'rsi',p:{period:14}},{id:'macd',p:{fast:12,slow:26,signal:9}}],
+    'Volatility': [{id:'bb',p:{period:20,mult:2}},{id:'atr',p:{period:14}}],
+    'Clean price': [],
+  };
   const RANGES = [['1D',1],['5D',5],['1M',30],['3M',91],['6M',182],['YTD','ytd'],['1Y',365],['5Y',1826],['ALL',null]];
   const IND = {
     // overlays (pane 0)
@@ -274,7 +281,7 @@ const QXC = (() => {
     constructor(host, opts){
       this.host = host; this.opts = Object.assign({compact:false, persistKey:'main', symbol:currentSecurity, followResearch:false}, opts||{});
       const saved = store.get(CFG_KEY+'_'+this.opts.persistKey, null);
-      this.cfg = Object.assign({type:'candles', interval:'1D', range:'1Y', scale:'normal', magnet:true, indicators:[{id:'vol',p:{ma:20}},{id:'sma',p:{period:50}},{id:'sma',p:{period:200}}]}, saved||{});
+      this.cfg = Object.assign({type:'candles', interval:'1D', range:'1Y', scale:'normal', magnet:true, grid:true, priceLine:true, watermark:true, palette:'classic', spacing:'normal', autoRefresh:false, indicators:[{id:'vol',p:{ma:20}},{id:'sma',p:{period:50}},{id:'sma',p:{period:200}}]}, saved||{});
       this.symbol = this.opts.symbol;
       this.compare = []; this.tool = 'cursor'; this.drawings = []; this.sel = null; this.pending = null;
       this.build();
@@ -307,13 +314,22 @@ const QXC = (() => {
           <button class="qxc-ib qxc-cmpbtn" title="Compare with another symbol">+ Compare</button>
           <input class="qxc-cmpinput" list="qxcSymList" placeholder="Symbol, Enter" style="display:none" spellcheck="false">
           <span class="qxc-spacer"></span>
-          <button class="qxc-ib qxc-magnet" title="Magnet: snap crosshair and drawings to OHLC">🧲</button>
-          <button class="qxc-ib qxc-fit" title="Reset view (fit all)">⤢</button>
-          <button class="qxc-ib qxc-shot" title="Download chart image (PNG)">📷</button>
-          <button class="qxc-ib qxc-full" title="Full screen">⛶</button>
+          <div class="qxc-dd">
+            <button class="qxc-ddbtn qxc-ib" title="Indicator templates — save and re-apply indicator sets"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></button>
+            <div class="qxc-menu qxc-tplmenu"></div>
+          </div>
+          <div class="qxc-dd">
+            <button class="qxc-ddbtn qxc-ib" title="Chart settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+            <div class="qxc-menu qxc-setmenu wide"></div>
+          </div>
+          <button class="qxc-ib qxc-lock" title="Lock / unlock chart touch gestures (stops accidental zoom while scrolling the page)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
+          <button class="qxc-ib qxc-magnet" title="Magnet: snap crosshair and drawings to OHLC"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v8a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/></svg></button>
+          <button class="qxc-ib qxc-fit" title="Reset view (fit all)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <button class="qxc-ib qxc-shot" title="Download chart image (PNG)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+          <button class="qxc-ib qxc-full" title="Full screen"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>
         </div>
         <div class="qxc-body">
-          <div class="qxc-tools">${TOOLS.map(([k,t,d])=>`<button data-tool="${k}" title="${t}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="${d}"/></svg></button>`).join('')}<span class="qxc-tsep"></span><button data-act="alert" title="Alert me when price crosses the selected line">🔔</button><button data-act="del" title="Delete selected drawing (Del)">🗑</button><button data-act="clear" title="Remove all drawings on this symbol">✕</button></div>
+          <div class="qxc-tools">${TOOLS.map(([k,t,d])=>`<button data-tool="${k}" title="${t}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="${d}"/></svg></button>`).join('')}<span class="qxc-tsep"></span><button data-act="alert" title="Alert me when price crosses the selected line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button><button data-act="del" title="Delete selected drawing (Del)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button><button data-act="clear" title="Remove all drawings on this symbol"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
           <div class="qxc-stage">
             <div class="qxc-canvas"></div>
             <svg class="qxc-draw"></svg>
@@ -343,8 +359,43 @@ const QXC = (() => {
       this.chart.subscribeCrosshairMove(p=>this.onCross(p));
       this.chart.timeScale().subscribeVisibleLogicalRangeChange(()=>this.renderDrawings());
       new ResizeObserver(()=>this.renderDrawings()).observe(stage);
+      this.locked = TOUCH && store.get('qxc_touch_unlocked') !== true;
+      this.applyPrefs(); this.renderMenus();
       this.syncToolbar();
     }
+    /* ---------- v6: touch safety, settings, templates ---------- */
+    applyPrefs(){
+      if(!this.chart) return;
+      const c = this.cfg, line = css('--line-soft')||'#1C202A';
+      const sp = {compact:4, normal:7, wide:12}[c.spacing] || 7;
+      const touchOn = !this.locked;
+      this.chart.applyOptions({
+        grid:{vertLines:{visible:c.grid!==false, color:line}, horzLines:{visible:c.grid!==false, color:line}},
+        timeScale:{barSpacing:sp},
+        // Touch devices: never stretch the price/time axes by dragging their edges and never let a vertical
+        // finger move hijack the page scroll — the reported "chart expands/contracts while scrolling" bug.
+        handleScroll: TOUCH ? (touchOn ? {mouseWheel:false, pressedMouseMove:true, horzTouchDrag:true, vertTouchDrag:false} : false) : true,
+        handleScale: TOUCH ? (touchOn ? {axisPressedMouseMove:{time:false, price:false}, axisDoubleClickReset:true, mouseWheel:false, pinch:true} : false) : true,
+        layout:{panes:{enableResize:!TOUCH}},
+      });
+      this.host.classList.toggle('locked', !!this.locked);
+      const lk = this.q('.qxc-lock'); if(lk){ lk.style.display = TOUCH ? '' : 'none'; lk.classList.toggle('active', !this.locked); lk.title = this.locked ? 'Chart locked — tap to interact (pan / pinch-zoom)' : 'Chart unlocked — tap to lock so page scrolling never moves the chart'; }
+      if(this.autoTimer){ clearInterval(this.autoTimer); this.autoTimer = null; }
+      if(c.autoRefresh) this.autoTimer = setInterval(()=>{ if(document.visibilityState==='visible' && this.host.isConnected){ dataCache.delete(this.symbol+'|'+this.cfg.interval); this.load(); } }, this.B && this.B.intraday ? 30e3 : 120e3);
+    }
+    renderMenus(){
+      const set = this.q('.qxc-setmenu'); const c = this.cfg;
+      const row = (k, label, on) => `<div class="qxc-mi qxc-tog ${on?'active':''}" data-set="${k}"><span>${label}</span><i>${on?'On':'Off'}</i></div>`;
+      if(set) set.innerHTML = `<div class="qxc-mh">Display</div>${row('grid','Grid lines', c.grid!==false)}${row('priceLine','Last-price line', c.priceLine!==false)}${row('watermark','Symbol watermark', c.watermark!==false)}${row('autoRefresh','Auto-refresh data', !!c.autoRefresh)}
+        <div class="qxc-mh">Candle colours</div>${[['classic','Green / red'],['mono','Monochrome'],['bluered','Blue / orange'],['tv','Teal / coral']].map(([k,l])=>`<div class="qxc-mi ${c.palette===k?'active':''}" data-pal="${k}">${l}</div>`).join('')}
+        <div class="qxc-mh">Bar spacing</div>${[['compact','Compact'],['normal','Normal'],['wide','Wide']].map(([k,l])=>`<div class="qxc-mi ${c.spacing===k?'active':''}" data-spc="${k}">${l}</div>`).join('')}
+        <div class="qxc-mh">Reset</div><div class="qxc-mi" data-set="reset">Restore default indicators &amp; settings</div>`;
+      const tpl = this.q('.qxc-tplmenu'); const T = store.get('qxc_templates') || {};
+      if(tpl) tpl.innerHTML = `<div class="qxc-mh">Your templates</div>${Object.keys(T).length ? Object.keys(T).map(n=>`<div class="qxc-mi" data-tpl="${escapeHtml(n)}"><b>${escapeHtml(n)}</b> <span>${T[n].length} indicators</span><em data-tpldel="${escapeHtml(n)}" title="Delete template">×</em></div>`).join('') : '<div class="qxc-mi" style="opacity:.6;cursor:default">None yet</div>'}
+        <div class="qxc-mh">Built-in</div>${Object.entries(BUILTIN_TPL).map(([n,v])=>`<div class="qxc-mi" data-btpl="${escapeHtml(n)}"><b>${escapeHtml(n)}</b> <span>${v.map(x=>IND[x.id]?IND[x.id].short:x.id).join(' · ')}</span></div>`).join('')}
+        <div class="qxc-mh">Save</div><div class="qxc-mi" data-tplsave="1">＋ Save current indicators as a template…</div>`;
+    }
+    candleColors(){ const P = {classic:[css('--up')||'#3ECF8E', css('--down')||'#FF5C6C'], mono:['#D7DBE3','#5B6272'], bluered:['#4F8CFF','#F59E0B'], tv:['#26A69A','#EF5350']}; return P[this.cfg.palette] || P.classic; }
     fmtP(p){ if(p==null||!isFinite(p)) return ''; const a=Math.abs(p); const d = a>=1000?2:a>=10?2:a>=1?3:a>=0.01?4:6; return p.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
     theme(){ if(!this.chart) return; this.chart.applyOptions({layout:{textColor:css('--text-1')}, grid:{vertLines:{color:css('--line-soft')}, horzLines:{color:css('--line-soft')}}, rightPriceScale:{borderColor:css('--line')}, timeScale:{borderColor:css('--line')}}); this.redraw(); }
     wire(){
@@ -356,6 +407,14 @@ const QXC = (() => {
         else if(t.dataset.type){ this.cfg.type = t.dataset.type; this.save(); this.closeMenus(); this.redraw(); }
         else if(t.dataset.scale){ this.cfg.scale = t.dataset.scale; this.save(); this.closeMenus(); this.applyScale(); this.syncToolbar(); }
         else if(t.dataset.ind){ this.addIndicator(t.dataset.ind); this.closeMenus(); }
+        else if(t.dataset.set){ const k = t.dataset.set; if(k==='reset'){ const keep = {interval:this.cfg.interval, range:this.cfg.range}; this.cfg = Object.assign({type:'candles', scale:'normal', magnet:true, grid:true, priceLine:true, watermark:true, palette:'classic', spacing:'normal', autoRefresh:false, indicators:[{id:'vol',p:{ma:20}},{id:'sma',p:{period:50}},{id:'sma',p:{period:200}}]}, keep); toast('Chart reset to defaults.','ok'); } else this.cfg[k] = this.cfg[k]===false ? true : (k==='autoRefresh' ? !this.cfg[k] : false); this.save(); this.applyPrefs(); this.renderMenus(); this.redraw(); }
+        else if(t.dataset.pal){ this.cfg.palette = t.dataset.pal; this.save(); this.renderMenus(); this.redraw(); }
+        else if(t.dataset.spc){ this.cfg.spacing = t.dataset.spc; this.save(); this.applyPrefs(); this.renderMenus(); }
+        else if(e.target.closest('[data-tpldel]')){ const n = e.target.closest('[data-tpldel]').dataset.tpldel; const T = store.get('qxc_templates')||{}; delete T[n]; store.set('qxc_templates', T); this.renderMenus(); e.stopPropagation(); }
+        else if(t.dataset.tpl){ const T = store.get('qxc_templates')||{}; if(T[t.dataset.tpl]){ this.cfg.indicators = JSON.parse(JSON.stringify(T[t.dataset.tpl])); this.save(); this.closeMenus(); this.redraw(); toast(`Template "${t.dataset.tpl}" applied.`,'ok'); } }
+        else if(t.dataset.btpl){ this.cfg.indicators = JSON.parse(JSON.stringify(BUILTIN_TPL[t.dataset.btpl])); this.save(); this.closeMenus(); this.redraw(); toast(`"${t.dataset.btpl}" indicators applied.`,'ok'); }
+        else if(t.dataset.tplsave){ this.closeMenus(); askText('Save indicator template', 'Give this set of indicators a name — you can apply it to any chart later.', 'e.g. My swing setup', v=>v.trim()?null:'Enter a name').then(n=>{ if(!n) return; const T = store.get('qxc_templates')||{}; T[n.trim()] = JSON.parse(JSON.stringify(this.cfg.indicators)); store.set('qxc_templates', T); this.renderMenus(); toast(`Template "${n.trim()}" saved.`,'ok'); }); }
+        else if(t.classList.contains('qxc-lock')){ this.locked = !this.locked; store.set('qxc_touch_unlocked', !this.locked); this.applyPrefs(); toast(this.locked ? 'Chart locked — page scrolling will not move it.' : 'Chart unlocked — drag to pan, pinch to zoom. Tap the lock again when done.', 'ok'); }
         else if(t.dataset.tool){ this.setTool(t.dataset.tool); }
         else if(t.dataset.act==='del'){ this.deleteSelected(); }
         else if(t.dataset.act==='alert'){ QXAL.fromDrawing(this.symbol, this.cfg.interval, this.sel!=null ? this.drawings[this.sel] : null); }
@@ -451,7 +510,7 @@ const QXC = (() => {
       (this.series||[]).forEach(s=>{ try{ this.chart.removeSeries(s); }catch(e){} });
       this.series = []; this.indSeries = [];
       const D = this.displayData(); this.D = D;
-      const up = css('--up')||'#3ECF8E', dn = css('--down')||'#FF5C6C', accent = css('--teal')||'#2DD4BF';
+      const [up, dn] = this.candleColors(), accent = css('--teal')||'#2DD4BF';
       const t = this.cfg.type;
       const bars = D.time.map((tm,i)=>({time:tm, open:D.open[i], high:D.high[i], low:D.low[i], close:D.close[i]}));
       const line = D.time.map((tm,i)=>({time:tm, value:D.close[i]}));
@@ -465,10 +524,10 @@ const QXC = (() => {
       else if(t==='area'){ main = this.chart.addSeries(lw.AreaSeries, {lineColor:accent, topColor:'rgba(45,212,191,0.32)', bottomColor:'rgba(45,212,191,0.02)', lineWidth:2}); main.setData(line); }
       else if(t==='baseline'){ const base = D.close[Math.max(0, D.close.length-1-this.visibleCount())] ?? D.close[0]; main = this.chart.addSeries(lw.BaselineSeries, {baseValue:{type:'price', price:base}, topLineColor:up, bottomLineColor:dn, topFillColor1:'rgba(62,207,142,0.28)', topFillColor2:'rgba(62,207,142,0.02)', bottomFillColor1:'rgba(255,92,108,0.02)', bottomFillColor2:'rgba(255,92,108,0.28)', lineWidth:2}); main.setData(line); }
       else if(t==='columns'){ main = this.chart.addSeries(lw.HistogramSeries, {color:accent}); main.setData(line.map((p,i)=>({...p, color: i&&D.close[i]<D.close[i-1] ? dn : up}))); }
-      main.applyOptions({priceLineVisible:true, lastValueVisible:true, priceFormat:{type:'custom', minMove:0.000001, formatter:p=>this.fmtP(p)}});
+      main.applyOptions({priceLineVisible:this.cfg.priceLine!==false, lastValueVisible:true, priceFormat:{type:'custom', minMove:0.000001, formatter:p=>this.fmtP(p)}});
       this.main = main; this.series.push(main);
       // watermark
-      try{ if(this.wm) this.wm.detach(); this.wm = lw.createTextWatermark(this.chart.panes()[0], {horzAlign:'center', vertAlign:'center', lines:[{text:this.symbol+' · '+(INTERVALS.find(x=>x[0]===this.cfg.interval)||[])[1], color:'rgba(127,127,127,0.07)', fontSize:Math.min(64, Math.max(28, this.host.clientWidth/14))}]}); }catch(e){}
+      try{ if(this.wm) this.wm.detach(); this.wm = null; if(this.cfg.watermark!==false) this.wm = lw.createTextWatermark(this.chart.panes()[0], {horzAlign:'center', vertAlign:'center', lines:[{text:this.symbol+' · '+(INTERVALS.find(x=>x[0]===this.cfg.interval)||[])[1], color:'rgba(127,127,127,0.07)', fontSize:Math.min(64, Math.max(28, this.host.clientWidth/14))}]}); }catch(e){}
       // compare overlays
       const palette = ['#F59E0B','#60A5FA','#F472B6','#A78BFA','#34D399'];
       this.compare.forEach((c,k)=>{ if(!c.B) return; const s = this.chart.addSeries(lw.LineSeries, {color:palette[k%palette.length], lineWidth:2, priceLineVisible:false, lastValueVisible:true, title:c.t}); const map = new Map(c.B.time.map((tm,i)=>[tm, c.B.close[i]])); s.setData(D.time.filter(tm=>map.has(tm)).map(tm=>({time:tm, value:map.get(tm)}))); this.series.push(s); c.series = s; });

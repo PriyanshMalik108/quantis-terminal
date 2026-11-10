@@ -660,7 +660,10 @@ async function renderPortfolioBenchmarkStats(pfReturns, annRet){
    chart), with the old seeded matrix kept ONLY as the final per-ticker fallback when a specific
    ticker's live fetch fails — same honest, disclosed pattern used everywhere else in this build. */
 let corrRenderToken = 0;
-async function renderCorrelation(){
+/* Correlation view now lives in js/features/correlation.js (QXCOR) — this delegates. The previous
+   implementation is kept below as renderCorrelationLegacy for reference. */
+async function renderCorrelation(){ if((typeof QXCOR!=='undefined')) return QXCOR.render(); return renderCorrelationLegacy(); }
+async function renderCorrelationLegacy(){
   const myToken = ++corrRenderToken;
   let tickers = activeWatchlist();
   if(tickers.length < 2) tickers = SECURITIES.slice(0,6).map(s=>s.t);

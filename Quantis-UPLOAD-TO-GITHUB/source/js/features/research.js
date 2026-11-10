@@ -33,15 +33,17 @@ function renderWatchlist(){
   }).join('');
   wl.querySelectorAll('.wl-item').forEach(el=>el.addEventListener('click',()=>selectSecurity(el.dataset.t)));
 }
-async function promptAddToWatchlist(){
-  const t = await askText('Add to watchlist', 'Ticker symbol from the searchable universe (e.g. AAPL, RELIANCE, HDFCBANK). Use Ctrl+K to search by company name.', 'Ticker',
-    v=> SECURITY_UNIVERSE.find(x=>x.t===v.trim().toUpperCase()) ? null : `"${v.trim().toUpperCase()}" isn't in the searchable universe — try Ctrl+K to search by name.`);
-  if(!t) return;
-  const clean = t.trim().toUpperCase();
-  const meta = SECURITY_UNIVERSE.find(x=>x.t===clean);
-  if(!meta) return;
-  if(!SECURITIES.some(s=>s.t===clean)) SECURITIES.push(makeSampleSecurityEntry(meta));
-  addToWatchlist(clean);
+/* Add to watchlist: a search box that finds ANY security worldwide (not just the built-in list). */
+function promptAddToWatchlist(){
+  const ov = document.createElement('div'); ov.className = 'modalOverlay show';
+  ov.innerHTML = `<div class="modalBox" style="width:460px"><h3>Add to watchlist</h3><p class="qxa-dim">Search by company name, ticker or ISIN — any exchange worldwide, plus ETFs, indices, crypto, currencies and commodities.</p><input id="wlPick" class="qx-input" placeholder="e.g. Taparia Tools, AAPL, INE002A01018"><div style="text-align:right;margin-top:12px"><button class="btn secondary small" type="button" id="wlPickClose">Close</button></div></div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener('click', e=>{ if(e.target===ov) close(); });
+  ov.querySelector('#wlPickClose').onclick = close;
+  const inp = ov.querySelector('#wlPick'); QXPICK.attach(inp, {onPick:t=>{ addToWatchlist(t); renderWatchlist(); try{ refreshDashWatch(); }catch(e){} close(); }});
+  setTimeout(()=>inp.focus(), 30);
+  inp.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
 }
 /* Previously: renderScoreChips() rendered a single static SCORES array (Fundamental 78,
    Technical 61, Valuation 44, Quality 82...) that never changed no matter which security

@@ -59,10 +59,11 @@ const QXU = (() => {
   }
   function mountHeatmap(){
     if(document.getElementById('qxHeatmap')) return;
-    const g = document.querySelector('#view-dashboard .viewbody > .grid-4'); if(!g) return;
-    const card = document.createElement('div'); card.className = 'card'; card.style.marginBottom = '12px';
+    const slot = document.getElementById('dashHeatSlot');
+    const g = slot || document.querySelector('#view-dashboard .viewbody > .grid-4'); if(!g) return;
+    const card = slot || document.createElement('div'); if(!slot){ card.className = 'card'; card.style.marginBottom = '12px'; }
     card.innerHTML = `<h3>Market Heatmap <span id="qxHeatBadge" class="badge assume">LOADING</span></h3><div id="qxHeatmap" class="qxh"></div><div class="qxa-dim" id="qxHeatNote" style="margin-top:6px"></div>`;
-    g.after(card);
+    if(!slot) g.after(card);
     card.querySelector('#qxHeatmap').addEventListener('click', e=>{ const t = e.target.closest('.qxh-t'); if(!t) return; const tv = t.dataset.tv; const hit = SECURITY_UNIVERSE.find(x=>LD.tvSymbol(x.t)===tv) || SECURITIES.find(x=>LD.tvSymbol(x.t)===tv); if(hit){ goto('research'); selectSecurity(hit.t); } else toast(`${tv} isn't in the built-in universe yet — find it with Ctrl+K.`, 'warn'); });
     const sel = document.getElementById('dashMarket'); if(sel) sel.addEventListener('change', heatmap);
     let rt; window.addEventListener('resize', ()=>{ clearTimeout(rt); rt = setTimeout(()=>{ if(document.getElementById('view-dashboard').classList.contains('active')) heatmap(); }, 250); });

@@ -85,7 +85,7 @@ const AI_INTENTS = [
     }},
   { test: /compare|vs\.?|versus/i,
     answer: ()=>{ return {text:"For a full side-by-side, use the Compare tab (left nav) - it pulls live price/fundamentals/technical figures for whichever tickers you select. I can only speak in detail about the currently selected security here.", tag:'UNCERTAIN'}; }},
-  { test: /cfa|level ii|quant|portfolio manager|explain.*like/i,
+  { test: /level ii|quant|portfolio manager|explain.*like|analyst view|synthes/i,
     answer: ()=>{
       const t = AppState.technicals, r = AppState.risk, d = AppState.dcf;
       if(!t && !r && !d) return {text:"Load Technicals, Risk, and Valuation for this security first, then ask again - I'll synthesize across whatever's actually been computed.", tag:'UNCERTAIN'};

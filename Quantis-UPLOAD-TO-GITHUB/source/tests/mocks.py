@@ -289,6 +289,19 @@ def respond(u, method='GET', body=None):
     if host == 'date.nager.at':
         return ('application/json', json.dumps([{'date': '2026-12-25', 'localName': 'Christmas', 'name': 'Christmas'}]))
     if host == 'api.worldbank.org':
+        C = [('IN','IND','India','South Asia','Lower middle income','New Delhi'),('US','USA','United States','North America','High income','Washington D.C.'),('CN','CHN','China','East Asia & Pacific','Upper middle income','Beijing'),('GB','GBR','United Kingdom','Europe & Central Asia','High income','London'),('JP','JPN','Japan','East Asia & Pacific','High income','Tokyo'),('BR','BRA','Brazil','Latin America & Caribbean','Upper middle income','Brasilia')]
+        if re.match(r'^/v2/country/?$', path):
+            return ('application/json', json.dumps([{'page':1,'pages':1,'total':len(C)}, [{'id':c[1],'iso2Code':c[0],'name':c[2],'region':{'id':'X','value':c[3]},'incomeLevel':{'value':c[4]},'capitalCity':c[5]} for c in C]]))
+        m = re.match(r'^/v2/country/([^/]+)/indicator/([^/]+)', path)
+        if m:
+            codes = m.group(1).split(';'); ind = m.group(2); rows = []
+            for code in codes:
+                c = next((x for x in C if x[0]==code), (code, code+'X', code, 'R', 'I', 'C'))
+                rnd = random.Random(sum(map(ord, code+ind)))
+                base = {'NY.GDP.MKTP.CD':3e12,'SP.POP.TOTL':1.4e9,'FI.RES.TOTL.CD':6e11,'NY.GDP.PCAP.CD':2500}.get(ind, 5)
+                for y in range(2025, 1995, -1):
+                    rows.append({'indicator':{'id':ind},'country':{'id':c[0],'value':c[2]},'countryiso3code':c[1],'date':str(y),'value': None if y==2025 and code=='US' else round(base*(1+rnd.uniform(-.15,.15)) - (2025-y)*base*0.01, 4)})
+            return ('application/json', json.dumps([{'page':1,'pages':1,'total':len(rows)}, rows]))
         return ('application/json', json.dumps([{'page': 1}, [{'value': 2.3, 'date': '2025'}]]))
     if host == 'publicreporting.cftc.gov':
         return ('application/json', json.dumps([{'report_date_as_yyyy_mm_dd': '2026-10-20T00:00:00.000', 'noncomm_positions_long_all': '200000', 'noncomm_positions_short_all': '150000', 'comm_positions_long_all': '300000', 'comm_positions_short_all': '350000', 'open_interest_all': '2000000'}]))
