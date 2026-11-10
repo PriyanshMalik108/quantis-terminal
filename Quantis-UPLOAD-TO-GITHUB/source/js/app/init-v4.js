@@ -41,3 +41,4 @@ runInit('deep links (#view)', ()=>{
   const open = () => { const v = (location.hash||'').slice(1); if(v && document.getElementById('view-'+v)) goto(v); };
   window.addEventListener('hashchange', open); setTimeout(open, 50);
 });
+runInit('responsive layout', ()=>QXL.init());

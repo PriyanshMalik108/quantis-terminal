@@ -51,12 +51,39 @@ const QXS = (() => {
     return {kind, sym: row._s, name: row.description || row.name, exchange: String(row._s||'').split(':')[0], price: row.close, ccy: row.currency, changePct: row.change,
       mcap: row.market_cap_basic ?? row.market_cap_calc ?? null, country: row.country, logo: logoid ? `https://s3-symbol-logo.tradingview.com/${logoid}--big.svg` : null, raw: row, market};
   };
+  /* Query normalisation (fixes "company not found"): TradingView matches the literal text, so
+     "Taparia Tools Limited" missed "Taparia Tools Ltd." and "bajaj-auto" missed "Bajaj Auto".
+     We strip legal suffixes/punctuation and try progressively looser variants until one hits. */
+  const SUFFIX = /\b(limited|ltd|inc|incorporated|corp|corporation|plc|co|company|the|sa|ag|nv|se|llc|holdings?)\b\.?/gi;
+  const isIsin = q => /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/i.test(q.replace(/\s/g,''));
+  function variants(q){
+    const v = [q];
+    const clean = q.replace(/[.,'’()]/g,' ').replace(/[-_/]/g,' ').replace(SUFFIX,' ').replace(/\s+/g,' ').trim();
+    if(clean && clean.toLowerCase() !== q.toLowerCase()) v.push(clean);
+    const words = clean.split(' ').filter(w=>w.length>1);
+    if(words.length > 2) v.push(words.slice(0,2).join(' '));
+    if(words.length > 1 && words[0].length >= 4) v.push(words[0]);
+    return [...new Set(v.filter(x=>x && x.length>=2))];
+  }
   async function tvMarket([mk, kinds, cols, sort, n], q){
-    const body = {filter:[{left:'name,description', operation:'match', right:q}], columns:cols, range:[0,n]};
-    if(mk==='global') body.filter.push({left:'is_primary', operation:'equal', right:true});
-    if(sort) body.sort = sort;
-    const {rows} = await LD.tvScan(mk, body);
-    return rows.map(r=>norm(r, mk));
+    const run = async (filter, primary) => {
+      const body = {filter:[...filter], columns:cols, range:[0,n]};
+      if(mk==='global'){
+        body.filter.push({left:'type', operation:'in_range', right:['stock','fund','dr']}); // no bonds/futures in the stock list
+        if(primary) body.filter.push({left:'is_primary', operation:'equal', right:true});
+      }
+      if(sort) body.sort = sort;
+      const {rows} = await LD.tvScan(mk, body);
+      return rows.map(r=>norm(r, mk));
+    };
+    if(mk==='global' && isIsin(q)){ const r = await run([{left:'isin', operation:'equal', right:q.replace(/\s/g,'').toUpperCase()}], false); if(r.length) return r; }
+    for(const v of (mk==='global' ? variants(q) : variants(q).slice(0,2))){
+      const f = [{left:'name,description', operation:'match', right:v}];
+      let r = await run(f, mk==='global');
+      if(!r.length && mk==='global') r = await run(f, false);           // secondary listings (e.g. BSE-only names)
+      if(r.length) return r;
+    }
+    return [];
   }
   async function mfIndia(q){
     const j = await cachedJson('qxmfs_'+q.toLowerCase(), 6*3600e3, async () => { const r = await fetchWithTimeout('https://api.mfapi.in/mf/search?q='+encodeURIComponent(q), {}, 10000); if(!r.ok) throw new Error('mfapi HTTP '+r.status); return r.json(); });

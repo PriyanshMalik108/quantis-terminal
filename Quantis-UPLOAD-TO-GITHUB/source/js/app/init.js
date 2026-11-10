@@ -17,6 +17,7 @@
    instead of silently killing everything after it. This directly fixes a real bug: a slow/blocked
    Chart.js CDN previously crashed renderOptions() and took Correlation/Alerts/Reports/Docs/Tests/
    the AI greeting/price chart/DCF down with it, since they all ran after it unguarded. */
+runInit('securities opened from search earlier', restoreAdmitted);
 runInit('workspace tabs', renderWorkspaceTabs);
 runInit('cloud sync', initFirebaseIfConfigured);
 runInit('dashboard', renderDashboard);

@@ -75,6 +75,7 @@
   "js/features/explorer.js",
   "js/features/formula-lab.js",
   "js/app/init.js",
+  "js/app/layout.js",
   "js/app/init-v4.js"
  ]
 }

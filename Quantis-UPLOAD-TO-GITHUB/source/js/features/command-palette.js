@@ -71,7 +71,7 @@ function renderPalResults(q){
   ).slice(0,30);
   const classLabel = paletteClassFilter ? ` — ${paletteClassFilter}` : '';
   const isBondQuery = /bond|debenture/.test(qn);
-  const bondMsg = isBondQuery ? ` Individual corporate bonds/debentures aren't covered by any free live-quote source anywhere — bond ETFs (try the ETF filter) are the closest real, live-priceable option.` : '';
+  const bondMsg = ''; // bonds & debentures are now searchable worldwide (TradingView bond market) — see results below
   if(matches.length){ html += `<div class="palgroup">Curated${classLabel} (${matches.length}${matches.length===30?'+':''})</div>` + matches.map(s=>`<div class="palrow" data-t="${s.t}"><span class="pt">${s.t}</span><span class="pn">${s.n} · ${s.cls} · ${s.ex} · ${s.ctry}</span></div>`).join('') + (isBondQuery ? `<div class="palrow"><span class="pn" style="color:var(--text-2)">${bondMsg.trim()}</span></div>` : ''); }
   else if((q && !q.startsWith('/')) || paletteClassFilter){
     html += `<div class="palgroup">Curated${classLabel}</div><div class="palrow"><span class="pn">No curated match${classLabel} for "${escapeHtml(q)}" — searching worldwide…${bondMsg}</span></div>`;
@@ -117,22 +117,38 @@ function renderPalResults(q){
     if(amfiEl && wantsMutualFund) amfiEl.innerHTML = `<div class="palgroup">India Mutual Funds</div><div class="palrow"><span class="pn">Loading the scheme directory…</span></div>`;
     window.__palSearchTimer = setTimeout(async ()=>{
       try{
-        let results = await searchYahooGlobalLive(q.trim());
+        /* Worldwide search = TradingView (every listed stock/ETF/fund on ~70 exchanges incl. BSE-only
+           small caps such as Taparia Tools, plus bonds, futures, crypto, FX, indices) merged with CNBC's
+           lookup (indices & a few venues TradingView names differently). Fixes "listed company not found". */
+        const KIND_FOR_CLASS = {Equity:['equity','preferred'], ETF:['etf'], 'Mutual Fund':['fund'], Derivative:['future'], Commodity:['commodity'], Index:['index'], Crypto:['crypto'], FX:['fx']};
+        const kinds = paletteClassFilter ? (KIND_FOR_CLASS[paletteClassFilter] || ['equity']) : ['equity','preferred','etf','fund','bond','govbond','future','crypto','fx','index','commodity'];
+        const [tvRes, cnbcRes] = await Promise.all([
+          QXS.search(q.trim(), kinds).catch(e=>({items:[], errors:[e.message]})),
+          searchYahooGlobalLive(q.trim()).catch(()=>[])]);
+        let results = cnbcRes;
         if(paletteClassFilter) results = results.filter(r=>r.cls===paletteClassFilter);
-        results = results.filter(r=>!SECURITY_UNIVERSE.some(s=>LD.cnbcSymbol(s.t)===r._cnbc)); // don't duplicate what's already shown above
+        const tvSeen = new Set(tvRes.items.map(i=>i.sym));
+        results = results.filter(r=>!SECURITY_UNIVERSE.some(s=>LD.cnbcSymbol(s.t)===r._cnbc) && !(r._tv && tvSeen.has(r._tv)));
+        const tvItems = tvRes.items.slice(0, 40);
         if(myToken !== paletteSearchToken) return; // a newer query has since been typed — discard
         const el = document.getElementById('palGlobalResults');
         if(!el) return;
-        if(results.length){
-          el.innerHTML = `<div class="palgroup">Worldwide (live, ${results.length})</div>` + results.map(r=>
-            `<div class="palrow" data-global-t="${escapeHtml(r._cnbc)}"><span class="pt">${escapeHtml(r.t)}</span><span class="pn">${escapeHtml(r.n)} · ${escapeHtml(r.cls)} · ${escapeHtml(r.ex)} · ${escapeHtml(r.ctry)}</span></div>`
-          ).join('');
+        if(tvItems.length || results.length){
+          const fmtP = it => it.price!=null && isFinite(it.price) ? `${Number(it.price).toLocaleString(undefined,{maximumFractionDigits:it.price<1?6:2})} ${escapeHtml(it.ccy||'')}` : '';
+          el.innerHTML = `<div class="palgroup">Worldwide (live, ${tvItems.length + results.length})</div>`
+            + tvItems.map((it,i)=>`<div class="palrow" data-tv-i="${i}"><span class="pt">${escapeHtml(String(it.sym).split(':').pop())}</span><span class="pn">${escapeHtml(it.name||'')} · ${escapeHtml(QXS.KINDS[it.kind]?.label||it.kind)} · ${escapeHtml(it.exchange||'')}${it.country?' · '+escapeHtml(it.country):''}${fmtP(it)?' · '+fmtP(it):''}</span></div>`).join('')
+            + results.map(r=>`<div class="palrow" data-global-t="${escapeHtml(r._cnbc)}"><span class="pt">${escapeHtml(r.t)}</span><span class="pn">${escapeHtml(r.n)} · ${escapeHtml(r.cls)} · ${escapeHtml(r.ex)} · ${escapeHtml(r.ctry)}</span></div>`).join('');
+          el.querySelectorAll('.palrow[data-tv-i]').forEach(row=>row.addEventListener('click', ()=>{
+            const it = tvItems[+row.dataset.tvI]; if(!it) return; closePalette();
+            if(['equity','preferred','etf','fund'].includes(it.kind)){ const t = admitTvRow({...it.raw, _s: it.sym}); if(t){ selectSecurity(t); } }
+            else { goto('explorer'); setTimeout(()=>QXE.open(it), 80); }
+          }));
           el.querySelectorAll('.palrow[data-global-t]').forEach(row=>row.addEventListener('click', ()=>{
             const r = results.find(x=>x._cnbc===row.dataset.globalT);
             if(r){ admitGlobalSearchResult(r); selectSecurity(r.t); closePalette(); }
           }));
         }else{
-          el.innerHTML = `<div class="palgroup">Worldwide (live)</div><div class="palrow"><span class="pn">No worldwide match either for "${escapeHtml(q)}".</span></div>`;
+          el.innerHTML = `<div class="palgroup">Worldwide (live)</div><div class="palrow"><span class="pn">No worldwide match for "${escapeHtml(q)}". Try the company's short name (e.g. "Taparia"), its ticker, or its ISIN.</span></div>`;
         }
       }catch(err){
         if(myToken !== paletteSearchToken) return;
@@ -181,7 +197,7 @@ function bindPalRows(){
 palInput.addEventListener('input', e=>renderPalResults(e.target.value));
 // Arrow keys / Enter in the command palette — previously mouse-only, despite being a keyboard-first feature.
 palInput.addEventListener('keydown', e=>{
-  const rows = [...palResults.querySelectorAll('.palrow[data-t],.palrow[data-cmd],.palrow[data-optchain],.palrow[data-global-t],.palrow[data-amfi-code]')];
+  const rows = [...palResults.querySelectorAll('.palrow[data-t],.palrow[data-cmd],.palrow[data-optchain],.palrow[data-tv-i],.palrow[data-global-t],.palrow[data-amfi-code]')];
   if(!rows.length) return;
   let i = rows.findIndex(r=>r.classList.contains('sel'));
   if(e.key==='ArrowDown' || e.key==='ArrowUp'){

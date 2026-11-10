@@ -1,4 +1,8 @@
 # Changelog
+## 4.1.0 — 2026-11-10
+* Search: top search box now queries TradingView's worldwide listings (every exchange incl. BSE-only small caps such as Taparia Tools) alongside CNBC; tolerant matching (Ltd/Limited, punctuation, hyphens), ISIN lookup, no bonds/futures mixed into stock results; securities opened from search are remembered across visits.
+* Layout: new css/v5-responsive.css + js/app/layout.js — watchlist and AI assistant become toggleable drawers on laptops/tablets/phones; whole Research page scrolls on phones; score tiles in a tidy grid; two-row phone top bar; More menu as a tile grid; tables scroll inside their card; chart menus stay on-screen; nav rail fits 768 px-tall laptops; grid cards no longer overflow (Portfolio, Options, Report Studio, Data Sources, Tests).
+* Fixes: readable quote timestamps; long watchlist tickers no longer overlap prices; drawers close on view change / Esc / outside tap.
 ## 4.0.0 — 2026-11-10
 * Multi-file project with developer notes on every file, docs/, build tool, tests.
 * Universal Search across 12 asset kinds; detail pages for bonds/debentures, crypto, futures, options, FX, mutual funds, indices/commodities; live option chains with IV & Greeks.

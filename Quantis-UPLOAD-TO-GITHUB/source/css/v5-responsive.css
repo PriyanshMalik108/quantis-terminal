@@ -1,0 +1,149 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Quantis · css/v5-responsive.css — device layout layer (loaded last, overrides earlier sheets)
+   Breakpoints
+     ≤ 480      small phone      · single column, compact chrome
+     ≤ 900      phone / portrait · bottom nav, whole Research page scrolls, rails become drawers
+     901–1279   tablet landscape / small laptop · watchlist + AI become drawers (☰ / ✦ buttons)
+     1280–1499  laptop           · watchlist docked, AI assistant a drawer
+     ≥ 1500     desktop          · everything docked (each panel can still be hidden)
+   Rail state lives on <body>: wl-open / wl-closed / ai-open / ai-closed (set by js/app/layout.js).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ---------- global robustness ---------- */
+#app{height:100vh;height:100dvh}
+.grid > *, .qxr-layout > *, .qxe-layout > *, .qxfl-layout > *, .grid-2 > *, .grid-3 > *{min-width:0}
+.card{min-width:0}
+img{max-width:100%}
+input, select, textarea{max-width:100%}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.tbl-scroll > table{min-width:100%}
+.palrow{gap:12px;align-items:baseline}
+.palrow .pn{text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.palrow .pt{flex-shrink:0}
+
+/* ---------- Research header ---------- */
+.sec-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sec-header{align-items:center;row-gap:10px}
+.sec-header .sec-id{min-width:0;flex:1 1 260px}
+.sec-header h1{overflow-wrap:anywhere}
+#secLiveStatus{font-size:11px;color:var(--text-2)}
+.rail-close{display:none;margin-left:auto;margin-right:6px;background:transparent;border:1px solid var(--line);color:var(--text-1);border-radius:4px;font-size:11px;padding:2px 7px;cursor:pointer}
+#researchLayout{position:relative}
+
+/* ---------- navigation rail: fit short laptop screens (768 px tall) ---------- */
+@media (min-width:901px) and (max-height:860px){
+  #navrail{padding:6px 0;gap:0}
+  .navitem{height:40px;width:46px}
+  .navitem .lb{font-size:8px}
+  .navdiv{margin:3px 0}
+}
+
+/* ---------- rails: docked vs drawer ---------- */
+@media (min-width:901px){
+  #leftrail, #rightrail{transition:transform .22s var(--ease, ease), box-shadow .22s}
+  /* watchlist */
+  body.wl-closed #leftrail{display:none}
+  /* AI assistant */
+  body.ai-closed #rightrail{display:none}
+}
+@media (min-width:901px) and (max-width:1279px){
+  #leftrail{display:none;width:250px}
+  body.wl-open #leftrail{display:flex;position:absolute;left:0;top:0;bottom:0;z-index:30;box-shadow:12px 0 32px rgba(0,0,0,.45)}
+  body.wl-open .rail-close{display:inline-block}
+}
+@media (min-width:901px) and (max-width:1499px){
+  #rightrail{display:none;width:340px}
+  body.ai-open #rightrail{display:flex;position:absolute;right:0;top:0;bottom:0;z-index:30;box-shadow:-12px 0 32px rgba(0,0,0,.45)}
+  body.ai-open #aiMobileClose{display:block;position:absolute;top:8px;right:8px;z-index:31;background:var(--bg-3);color:var(--text-1);border:1px solid var(--line);padding:5px 10px;border-radius:4px;font-size:11px;cursor:pointer}
+}
+@media (min-width:1280px) and (max-width:1499px){
+  #leftrail{width:200px}
+}
+@media (min-width:1500px){
+  #toggleWl, #toggleAi{opacity:.85}
+}
+
+/* ---------- laptop: tighter header so the chart gets the space ---------- */
+@media (min-width:901px) and (max-width:1499px){
+  .sec-header{padding:10px 14px;gap:12px}
+  .sec-price .px{font-size:22px}
+  .scorechip{min-width:58px;padding:4px 8px}
+  .scorechip .val{font-size:14px}
+  #tabcontent{padding:12px 14px}
+  .viewbody{padding:14px 16px}
+}
+
+/* ---------- phones & portrait tablets ---------- */
+@media (max-width:900px){
+  /* Research: the whole page scrolls (header no longer pins half the screen); tabs stay reachable */
+  #center{overflow-y:auto;display:block;-webkit-overflow-scrolling:touch}
+  #tabcontent{overflow:visible;padding:12px}
+  #tabs{position:sticky;top:0;z-index:6}
+  .sec-header{padding:12px;gap:10px}
+  .sec-header .sec-id{flex-basis:100%}
+  .sec-price{flex:1 1 auto}
+  .sec-price .px{font-size:24px}
+  .scorewrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-left:0;width:100%}
+  .scorechip{min-width:0;padding:6px 4px}
+  .scorechip .lbl{font-size:8.5px;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sec-actions{width:100%}
+  .sec-actions .btn{flex:1 1 0;justify-content:center;text-align:center}
+  /* watchlist as a full-height drawer */
+  body.wl-open #leftrail{display:flex !important;position:fixed;left:0;top:0;bottom:58px;width:min(320px,86vw);z-index:45;box-shadow:12px 0 32px rgba(0,0,0,.5)}
+  body.wl-open .rail-close{display:inline-block}
+  /* top bar: keep it to two tidy rows */
+  #topbar{row-gap:8px}
+  #globalSearch{flex:1 1 58% !important;order:2}
+  #mobileWsSelect{flex:0 0 calc(42% - 8px) !important;order:3}
+  .topbar-right{order:1;margin-left:auto}
+  #topbar .iconbtn{width:34px;height:34px}
+  #topbar [onclick="goto('export')"], #saveWorkspaceBtn, #themeBtn, #settingsBtn{display:none}
+  #cloudSyncLabel{display:none}
+  #cloudSyncBtn{width:34px !important;padding:0 !important}
+  /* comfortable touch targets */
+  .btn{min-height:36px}
+  .btn.small{min-height:32px}
+  #globalSearch, #palInput, #aiInput, .formrow input, .formrow select, .formrow textarea, #qxeQ, #qxflQ{font-size:16px} /* 16px stops iOS zooming into fields */
+  /* "More" sheet as a tile grid instead of one long list */
+  #moreSheet{display:grid !important;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px;align-content:start}
+  #moreSheet .mshead{grid-column:1/-1;padding:6px 4px 2px}
+  #moreSheet .msitem{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);font-size:12px;line-height:1.25}
+  #moreSheet .msitem.active{border-color:var(--amber-dim);color:var(--amber)}
+  /* palette fills the phone */
+  #palOverlay{padding-top:8px;align-items:flex-start}
+  #palette{max-width:calc(100vw - 16px);width:100%}
+  #palResults{max-height:calc(100dvh - 190px)}
+  .palrow{flex-direction:column;gap:2px;align-items:flex-start}
+  .palrow .pn{text-align:left;white-space:normal}
+  /* modals */
+  .modalBox{max-width:calc(100vw - 20px);max-height:calc(100dvh - 90px)}
+  /* view headers: shorter */
+  .viewhead h2{font-size:17px}
+  .viewhead .sub{font-size:11.5px}
+  /* Report Studio / Explorer / Formula Lab stack */
+  .qxr-layout, .qxe-layout, .qxfl-layout{grid-template-columns:1fr !important}
+  .qxr-themes{grid-template-columns:1fr 1fr}
+  .qxr-sw span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qxr-preview{overflow-x:auto}
+  .qxr-paper .qxr4{font-size:12.5px}
+  /* chart toolbars wrap instead of overflowing */
+  .qxc-top{flex-wrap:wrap;row-gap:4px}
+}
+@media (max-width:480px){
+  .brand-profile > span, a.brand-profile span{display:none !important} /* LinkedIn badge — the photo alone links to the profile */
+  .viewbody{padding:10px}
+  #tabcontent{padding:10px}
+  .card{padding:12px}
+  .scorechip .val{font-size:14px}
+  .qxr-themes{grid-template-columns:1fr}
+  .qxe-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .qxfl-result b{font-size:22px}
+  #moreSheet{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ---------- watchlist rows: long tickers no longer collide with the price ---------- */
+.wl-item{gap:8px}
+.wl-item > div:first-child{min-width:0;flex:1 1 auto;overflow:hidden}
+.wl-item > div:first-child > div{min-width:0}
+.wl-tick, .wl-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wl-px{text-align:right;flex-shrink:0}

@@ -53,6 +53,20 @@ with sync_playwright() as p:
     t = pg.text_content('#qxeDetail')
     check('option page: BSM model + greeks + scenarios', 'Model (BSM)' in t and 'Gamma' in t and 'Scenario grid' in t, t[:500])
     pg.screenshot(path=OUT+'/explorer_option.png')
+    # ---------- top search (command palette) finds listings worldwide via TradingView ----------
+    pg.evaluate("openPalette()"); pg.fill('#palInput', 'apple inc'); pg.wait_for_timeout(2500)
+    n = pg.locator('#palGlobalResults .palrow[data-tv-i]').count()
+    check('top search lists worldwide TradingView matches', n >= 1, pg.text_content('#palGlobalResults')[:300])
+    pg.locator('#palGlobalResults .palrow[data-tv-i]').first.click(); pg.wait_for_timeout(1500)
+    check('picking a worldwide result opens it in Research', pg.evaluate("document.getElementById('view-research').classList.contains('active')"), '')
+    cs = pg.evaluate("currentSecurity"); known = pg.evaluate("['AAPL','MSFT','NVDA'].includes(currentSecurity)")
+    check('opened security is remembered for next visit', known or cs in pg.evaluate("safeStorage.getItem('quantis_admitted_v1')||''"), (cs, pg.evaluate("safeStorage.getItem('quantis_admitted_v1')")))
+    # ---------- responsive panels ----------
+    pg.set_viewport_size({'width':1100,'height':760}); pg.wait_for_timeout(500)
+    check('laptop: AI panel is a closed drawer by default', not pg.evaluate("getComputedStyle(document.getElementById('rightrail')).display!=='none'"), '')
+    pg.click('#toggleAi'); pg.wait_for_timeout(400)
+    check('laptop: AI drawer opens', pg.evaluate("getComputedStyle(document.getElementById('rightrail')).position==='absolute'"), '')
+    pg.keyboard.press('Escape'); pg.set_viewport_size({'width':1500,'height':950}); pg.wait_for_timeout(500)
     # ---------- Formula Lab ----------
     pg.evaluate("selectSecurity('AAPL')"); pg.wait_for_timeout(1500)
     pg.evaluate("goto('formulas')"); pg.wait_for_timeout(800)

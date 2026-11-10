@@ -50,7 +50,7 @@ with sync_playwright() as p:
         pg.click('#qxResearchChart .qxc-cmpbtn'); pg.fill('#qxResearchChart .qxc-cmpinput','NVDA'); pg.keyboard.press('Enter'); pg.wait_for_timeout(2000)
         check('compare overlay rendered', 'vs NVDA' in pg.inner_text('#qxResearchChart .qxc-chips'), pg.inner_text('#qxResearchChart .qxc-chips'))
         # AI
-        pg.fill('#aiInput','what is the valuation?'); pg.click('#aiSend'); pg.wait_for_timeout(800)
+        pg.evaluate("if(getComputedStyle(document.getElementById('aiInput')).display==='none' || !document.getElementById('aiInput').offsetParent) QXL.toggle('ai', true)"); pg.wait_for_timeout(400); pg.fill('#aiInput','what is the valuation?'); pg.click('#aiSend'); pg.wait_for_timeout(800)
         check('AI answered', 'fair value' in pg.inner_text('#aiLog').lower() or 'dcf' in pg.inner_text('#aiLog').lower(), pg.inner_text('#aiLog')[-300:])
         # palette keyboard
         pg.keyboard.press('Control+k'); pg.wait_for_timeout(300)

@@ -39,6 +39,12 @@
    history (AMFI data) comes from mf.captnemo.in by ISIN — so funds now get a real chart too. */
 let amfiSchemes = null;
 let amfiLoadPromise = null;
+/* "2026-10-28T16:00:00.000-0400" → "28 Oct 2026, 16:00 (exchange time)" — the raw ISO string was hard to read. */
+function fmtQuoteTime(t){
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(t||'')); if(!m) return String(t||'');
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2]-1];
+  return `${+m[3]} ${mon} ${m[1]}, ${m[4]}:${m[5]} exchange time`;
+}
 async function loadAmfiSchemes(){
   if(amfiSchemes && amfiSchemes.length) return amfiSchemes;
   if(amfiLoadPromise) return amfiLoadPromise;
@@ -155,7 +161,7 @@ async function refreshHeaderQuote(t, token){
       if(sec.cls === 'Derivative' && sec.ex === 'NSE'){
         await renderNseFuturesBasis(sec, q, token);
       } else {
-        updateLiveQuote(t, q.last, q.prev, ccy, `${q.via||'CNBC'} live quote${q.time && !q.via ? ' · '+escapeHtml(String(q.time)) : ''}`);
+        updateLiveQuote(t, q.last, q.prev, ccy, `${q.via||'CNBC'} live quote${q.time && !q.via ? ' · '+escapeHtml(fmtQuoteTime(q.time)) : ''}`);
       }
     }
   }catch(e){ /* the last-close header from the chart stays in place */ }

@@ -289,6 +289,17 @@ function openTvRow(row){
   const t = admitTvRow(row);
   if(t) selectSecurity(t);
 }
+/* Securities opened from worldwide search are remembered (this browser only, max 300) so a
+   watchlist, portfolio or workspace that contains e.g. BSE:TAPARIA still works after a reload. */
+const ADMITTED_KEY = 'quantis_admitted_v1';
+function rememberAdmitted(kind, data){
+  try{ const a = JSON.parse(safeStorage.getItem(ADMITTED_KEY)||'[]'); const id = kind+':'+(data._s||data._cnbc);
+    if(a.some(x=>x.id===id)) return; a.push({id, kind, data}); safeStorage.setItem(ADMITTED_KEY, JSON.stringify(a.slice(-300))); }catch(e){}
+}
+function restoreAdmitted(){
+  let a = []; try{ a = JSON.parse(safeStorage.getItem(ADMITTED_KEY)||'[]'); }catch(e){ return; }
+  a.forEach(x=>{ try{ if(x.kind==='tv') admitTvRow(x.data); else if(x.kind==='cnbc') admitGlobalSearchResult(x.data); }catch(e){} });
+}
 function admitTvRow(row){
   const tvSym = row._s; if(!tvSym) return null;
   const known = SECURITY_UNIVERSE.find(x=>LD.tvSymbol(x.t)===tvSym) || SECURITIES.find(x=>x._tv===tvSym);
@@ -301,6 +312,7 @@ function admitTvRow(row){
   const meta = {t, n: row.description || row.name || sym, ex: LD.TV_EX_LABEL[ex] || ex, ctry: country || 'Global', sector: row.sector || cls, cls,
     _tv: tvSym, _cnbc: LD.cnbcFromTv(tvSym, country), _logoid: row.logoid || null};
   SECURITY_UNIVERSE.push(meta);
+  rememberAdmitted('tv', {_s:tvSym, name:row.name, description:row.description, type:row.type, country, currency:row.currency, sector:row.sector, logoid:row.logoid});
   const ccy = row.currency || currencyFor(country);
   SECURITIES.push({...meta, ccy, px: row.close || 0, chg: row.close && row.change!=null ? row.close - row.close/(1+row.change/100) : 0, chgPct: row.change || 0,
     rsi: row.RSI!=null ? Math.round(row.RSI*10)/10 : null, mcap: row.market_cap_basic ? Math.round(row.market_cap_basic/1e9*10)/10 : null,

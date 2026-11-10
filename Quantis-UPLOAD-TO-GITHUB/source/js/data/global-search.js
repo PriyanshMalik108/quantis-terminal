@@ -76,5 +76,6 @@ function admitGlobalSearchResult(r){
   if(SECURITY_UNIVERSE.some(x=>x.t===r.t)) return;
   const meta = {t:r.t, n:r.n, ex:r.ex, ctry:r.ctry, sector:r.sector, cls:r.cls, _cnbc:r._cnbc, _tv:r._tv};
   SECURITY_UNIVERSE.push(meta);
+  if(typeof rememberAdmitted==='function') rememberAdmitted('cnbc', {...r});
   if(!SECURITIES.some(s=>s.t===r.t)){ const e = makeSampleSecurityEntry(meta); e._cnbc = r._cnbc; e._tv = r._tv; e.px = 0; SECURITIES.push(e); }
 }
