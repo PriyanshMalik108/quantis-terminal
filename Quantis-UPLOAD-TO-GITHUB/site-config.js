@@ -19,6 +19,10 @@ window.QX_SITE_CONFIG = {
   // Alerts with the browser closed (Telegram / email): the address of your deployed alerts server.
   // Set up once — see server/alerts-worker/README.md (Reference-Source-Code package). Example: "https://quantis-alerts.yourname.workers.dev"
   alertsServer: "",
+  // Built-in data proxy for every visitor (IPO calendars, DRHPs, NSE / SEC documents, logos on reports).
+  // Deploy server/data-proxy once (free Cloudflare Worker — see docs/DATA-PROXY.md) and paste its address here,
+  // e.g. "https://quantis-data.yourname.workers.dev". Visitors never need to set anything up.
+  dataProxy: "",
   // Example (replace null above with your own values):
   // firebase: { apiKey: "AIza…", authDomain: "your-project.firebaseapp.com", projectId: "your-project",
   //             storageBucket: "your-project.appspot.com", messagingSenderId: "1234567890", appId: "1:1234567890:web:abc123" },
